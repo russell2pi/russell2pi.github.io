@@ -1,1 +1,1476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Classroom Conveyor Belt Rotator</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for clean icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Gentium+Book+Plus:ital,wght@0,400;0,700;1,400;1,700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Lightweight Markdown Parser -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #0b0f19;
+        }
+        /* Spotlight Glow Pulse */
+        .spotlight-pulse {
+            animation: pulse-glow 2.5s infinite ease-in-out;
+        }
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 15px rgba(99, 102, 241, 0.2); }
+            50% { box-shadow: 0 0 25px rgba(99, 102, 241, 0.4); }
+        }
 
+        /* Speaker Pulsating Background Fills */
+        @keyframes speaker-pulse-emerald {
+            0%, 100% {
+                background-color: rgba(2, 44, 34, 0.95);
+                border-color: rgba(16, 185, 129, 0.8);
+                box-shadow: 0 0 15px rgba(16, 185, 129, 0.15);
+            }
+            50% {
+                background-color: rgba(16, 185, 129, 0.25);
+                border-color: rgba(52, 211, 153, 1);
+                box-shadow: 0 0 25px rgba(52, 211, 153, 0.45);
+            }
+        }
+        @keyframes speaker-pulse-amber {
+            0%, 100% {
+                background-color: rgba(69, 26, 3, 0.95);
+                border-color: rgba(245, 158, 11, 0.8);
+                box-shadow: 0 0 15px rgba(245, 158, 11, 0.15);
+            }
+            50% {
+                background-color: rgba(245, 158, 11, 0.25);
+                border-color: rgba(251, 191, 36, 1);
+                box-shadow: 0 0 25px rgba(251, 191, 36, 0.45);
+            }
+        }
+        
+        .active-speaker-emerald {
+            animation: speaker-pulse-emerald 2.5s infinite ease-in-out;
+        }
+        .active-speaker-amber {
+            animation: speaker-pulse-amber 2s infinite ease-in-out;
+        }
+
+        /* Dynamic Loop-Back Flight Animations with Acceleration (ease-in-out physics) */
+        @keyframes loopBackA {
+            0% {
+                transform: translate(0, 0) scale(1);
+                opacity: 1;
+            }
+            30% {
+                transform: translate(0, 48px) scale(0.85);
+                opacity: 0.95;
+            }
+            80% {
+                transform: translate(calc(-1 * var(--travel-distance) + 20px), 48px) scale(0.5);
+                opacity: 0.7;
+            }
+            100% {
+                transform: translate(calc(-1 * var(--travel-distance)), 0) scale(0.35);
+                opacity: 0;
+            }
+        }
+        @keyframes loopBackB {
+            0% {
+                transform: translate(0, 0) scale(1);
+                opacity: 1;
+            }
+            30% {
+                transform: translate(0, 48px) scale(0.85);
+                opacity: 0.95;
+            }
+            80% {
+                transform: translate(calc(var(--travel-distance) - 20px), 48px) scale(0.5);
+                opacity: 0.7;
+            }
+            100% {
+                transform: translate(var(--travel-distance), 0) scale(0.35);
+                opacity: 0;
+            }
+        }
+
+        /* Mode 3: Arched Crossover Paths (A arcs UP/RIGHT, B arcs DOWN/LEFT) */
+        @keyframes loopBackCrossoverA {
+            0% {
+                transform: translate(0, 0) scale(1);
+                opacity: 1;
+            }
+            40% {
+                transform: translate(calc(var(--crossover-distance) * 0.45), -72px) scale(0.8);
+                opacity: 0.95;
+            }
+            80% {
+                transform: translate(calc(var(--crossover-distance) * 0.85), -36px) scale(0.55);
+                opacity: 0.7;
+            }
+            100% {
+                transform: translate(var(--crossover-distance), 0) scale(0.35);
+                opacity: 0;
+            }
+        }
+        @keyframes loopBackCrossoverB {
+            0% {
+                transform: translate(0, 0) scale(1);
+                opacity: 1;
+            }
+            40% {
+                transform: translate(calc(-1 * var(--crossover-distance) * 0.45), 72px) scale(0.8);
+                opacity: 0.95;
+            }
+            80% {
+                transform: translate(calc(-1 * var(--crossover-distance) * 0.85), 36px) scale(0.55);
+                opacity: 0.7;
+            }
+            100% {
+                transform: translate(calc(-1 * var(--crossover-distance)), 0) scale(0.35);
+                opacity: 0;
+            }
+        }
+        
+        /* Premium custom ease-in-out curves for natural acceleration-deceleration steps */
+        .animate-loop-a {
+            animation: loopBackA 0.85s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        }
+        .animate-loop-b {
+            animation: loopBackB 0.85s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        }
+        .animate-crossover-a {
+            animation: loopBackCrossoverA 1.3s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        }
+        .animate-crossover-b {
+            animation: loopBackCrossoverB 1.3s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        }
+
+        /* Custom rendered markdown styles using em for perfect proportional scaling, styled with Gentium Book Plus */
+        #instructionsOutput {
+            font-family: 'Gentium Book Plus', serif;
+        }
+        #instructionsOutput h1 { font-size: 1.5em; font-weight: 800; color: #ffffff; margin-bottom: 0.5rem; }
+        #instructionsOutput h2 { font-size: 1.3em; font-weight: 700; color: #f1f5f9; margin-bottom: 0.4rem; }
+        #instructionsOutput h3 { font-size: 1.1em; font-weight: 700; color: #e2e8f0; margin-bottom: 0.35rem; }
+        #instructionsOutput p { margin-bottom: 0.5rem; color: #e2e8f0; line-height: 1.5; font-size: 1em; }
+        #instructionsOutput ul { list-style-type: disc; padding-left: 1.25rem; margin-bottom: 0.5rem; font-size: 1em; }
+        #instructionsOutput ol { list-style-type: decimal; padding-left: 1.25rem; margin-bottom: 0.5rem; font-size: 1em; }
+        #instructionsOutput li { margin-bottom: 0.25rem; color: #e2e8f0; font-size: 1em; }
+        #instructionsOutput strong { color: #f8fafc; font-weight: 600; }
+        #instructionsOutput code { background-color: #020617; padding: 2px 4px; border-radius: 4px; font-family: monospace; color: #f43f5e; }
+    </style>
+</head>
+<body class="text-slate-100 min-h-screen flex flex-col justify-between overflow-x-hidden">
+
+    <!-- Main Workspace -->
+    <main class="flex-grow flex items-center justify-center p-4">
+        
+        <!-- Setup Screen -->
+        <div id="setupScreen" class="w-full max-w-3xl bg-slate-900/80 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-2xl backdrop-blur">
+            <h2 class="text-xl font-extrabold text-white mb-1 flex items-center gap-2">
+                <i class="fa-solid fa-clipboard-user text-indigo-400"></i> Configure Your Roster & Game Mode
+            </h2>
+            <p class="text-slate-400 text-xs mb-6">Enter your student names. Choose a physical queue rotation method below.</p>
+
+            <!-- Mode Selector Interface -->
+            <label class="block text-xs font-semibold uppercase tracking-wider text-indigo-400 mb-2">Select Conveyor Mode</label>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
+                <!-- Mode 1 Card -->
+                <div onclick="setMode('alternating')" id="modeCardAlternating" class="bg-indigo-950/20 hover:bg-indigo-950/40 border-2 border-indigo-500 rounded-xl p-3.5 cursor-pointer transition-all flex flex-col justify-between group">
+                    <div>
+                        <div class="flex items-center justify-between mb-1.5">
+                            <h3 class="font-bold text-xs text-indigo-300">Alternating Shift</h3>
+                            <i class="fa-solid fa-arrows-spin text-xs text-indigo-400 group-hover:rotate-45 transition-transform"></i>
+                        </div>
+                        <p class="text-[10px] text-slate-400 leading-relaxed">Alternates speaker shift. Cards swap Speaker A/B roles at every rotation step.</p>
+                    </div>
+                    <span class="text-[9px] font-bold text-indigo-400 uppercase mt-2 block tracking-wider">Mode 1</span>
+                </div>
+
+                <!-- Mode 2 Card -->
+                <div onclick="setMode('parallel')" id="modeCardParallel" class="bg-slate-950/40 hover:bg-indigo-950/20 border-2 border-slate-800 rounded-xl p-3.5 cursor-pointer transition-all flex flex-col justify-between group">
+                    <div>
+                        <div class="flex items-center justify-between mb-1.5">
+                            <h3 class="font-bold text-xs text-slate-300">Parallel Shift</h3>
+                            <i class="fa-solid fa-arrows-split-up-and-left text-xs text-slate-500"></i>
+                        </div>
+                        <p class="text-[10px] text-slate-400 leading-relaxed">Dual advancement. Both speakers slide back to their own tails simultaneously.</p>
+                    </div>
+                    <span class="text-[9px] font-bold text-slate-500 uppercase mt-2 block tracking-wider">Mode 2</span>
+                </div>
+
+                <!-- Mode 3 Card -->
+                <div onclick="setMode('crossover')" id="modeCardCrossover" class="bg-slate-950/40 hover:bg-indigo-950/20 border-2 border-slate-800 rounded-xl p-3.5 cursor-pointer transition-all flex flex-col justify-between group">
+                    <div>
+                        <div class="flex items-center justify-between mb-1.5">
+                            <h3 class="font-bold text-xs text-slate-300">Crossover Shift</h3>
+                            <i class="fa-solid fa-shuffle text-xs text-slate-500"></i>
+                        </div>
+                        <p class="text-[10px] text-slate-400 leading-relaxed">Dual crossover loop. Both speakers fly across the screen to join the opposite tails.</p>
+                    </div>
+                    <span class="text-[9px] font-bold text-slate-500 uppercase mt-2 block tracking-wider">Mode 3</span>
+                </div>
+            </div>
+
+            <!-- Input Tabs -->
+            <div class="flex border-b border-slate-800 mb-6">
+                <button onclick="switchTab('single')" id="tabSingle" class="py-2 px-4 font-semibold text-xs border-b-2 border-indigo-500 text-indigo-400 focus:outline-none transition-all">
+                    Option A: Single List (Auto-Split)
+                </button>
+                <button onclick="switchTab('double')" id="tabDouble" class="py-2 px-4 font-semibold text-xs border-b-2 border-transparent text-slate-400 hover:text-slate-200 focus:outline-none transition-all">
+                    Option B: Two Separate Lines
+                </button>
+            </div>
+
+            <!-- Tab Content: Single List -->
+            <div id="panelSingle" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Paste all names (one per line)</label>
+                    <textarea id="singleRosterInput" rows="4" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-200 placeholder-slate-600 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none transition-all text-xs" placeholder="Sarah&#10;John&#10;Ellen&#10;Arthur&#10;Bruce&#10;Diana"></textarea>
+                </div>
+                <div class="flex items-center gap-2 text-[11px] text-slate-400 bg-slate-950/50 p-2.5 rounded-lg border border-slate-800/30">
+                    <i class="fa-solid fa-circle-info text-indigo-400"></i>
+                    <span>This will automatically divide names evenly. Odd entries will face even entries.</span>
+                </div>
+            </div>
+
+            <!-- Tab Content: Double List -->
+            <div id="panelDouble" class="grid grid-cols-1 md:grid-cols-2 gap-4 hidden">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-emerald-400 mb-2">Line A (Top Queue)</label>
+                    <textarea id="lineARosterInput" rows="4" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-200 placeholder-slate-600 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none transition-all text-xs" placeholder="Sarah&#10;John&#10;Ellen"></textarea>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-amber-400 mb-2">Line B (Bottom Queue)</label>
+                    <textarea id="lineBRosterInput" rows="4" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-200 placeholder-slate-600 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none transition-all text-xs" placeholder="Arthur&#10;Bruce&#10;Diana"></textarea>
+                </div>
+            </div>
+
+            <!-- Dynamic Instruction Input Box -->
+            <div class="mt-4 border-t border-slate-800/60 pt-4">
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Discussion Instructions (Markdown Supported)</label>
+                <textarea id="instructionsInput" rows="2.5" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-200 placeholder-slate-600 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none transition-all text-xs" placeholder="### 💬 Active Conversation Rules&#10;1. Speak for 1 minute each.&#10;2. Share your feedback."></textarea>
+            </div>
+
+            <div class="mt-6 flex flex-wrap gap-3 justify-between items-center">
+                <button onclick="loadDemoData()" class="text-xs text-indigo-400 hover:text-indigo-300 font-medium transition-colors">
+                    ✨ Load Live Demo Topic
+                </button>
+                <button onclick="startGame()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 px-6 rounded-xl transition-all duration-200 flex items-center gap-2 shadow-lg shadow-indigo-600/30 hover:shadow-indigo-600/40 text-xs">
+                    Start Rotation Board <i class="fa-solid fa-play"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="gameScreen" class="w-full max-w-5xl hidden flex flex-col gap-4">
+            
+            <!-- Main Game Board: Colinear Queue flows meeting symmetrically in the center (pt-11 for label clearance) -->
+            <div id="gameBoard" class="grid grid-cols-[1fr_auto_1fr] gap-3 items-center w-full bg-slate-900/40 border border-slate-800/80 rounded-2xl pt-11 pb-5 px-5 shadow-xl relative overflow-visible">
+                
+                <!-- LINE A CONTAINER: Extends leftwards (Active speaker sits at the right) -->
+                <div class="w-full flex flex-col justify-center min-w-0">
+                    <!-- Absolute positioned geometric continuous queue flowing leftwards -->
+                    <div id="lineAQueue" class="relative w-full h-[88px] bg-slate-950/40 rounded-xl border border-slate-900/60 overflow-visible">
+                        <!-- Dynamically generated elements with right anchor -->
+                    </div>
+                </div>
+
+                <!-- CENTER INTERACTIVE HEADS CONNECTOR (Minimal gap) -->
+                <div class="flex flex-col items-center justify-center px-1">
+                    <div class="bg-indigo-600/20 text-indigo-400 p-2 rounded-full border border-indigo-500/20 animate-pulse flex items-center justify-center relative shadow-lg">
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="9" cy="7" r="4"></circle>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- LINE B CONTAINER: Extends rightwards (Active speaker sits at the left) -->
+                <div class="w-full flex flex-col justify-center min-w-0">
+                    <!-- Absolute positioned geometric continuous queue flowing rightwards -->
+                    <div id="lineBQueue" class="relative w-full h-[88px] bg-slate-950/40 rounded-xl border border-slate-900/60 overflow-visible">
+                        <!-- Dynamically generated elements with left anchor -->
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- FULL-WIDTH BOX: Parameterizable Markdown Instructions (Header at bottom) -->
+            <div class="w-full bg-slate-900/60 border border-slate-800 rounded-2xl p-5 shadow-lg backdrop-blur flex flex-col gap-3">
+                <div id="instructionsOutput" class="text-slate-200 leading-relaxed transition-all duration-150">
+                    <!-- Markdown rendered output -->
+                </div>
+                <!-- Repositioned and Renamed Header at Bottom with Font Scale Deck -->
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-t border-slate-800/60 pt-2.5 mt-1">
+                    <div class="flex items-center gap-2.5">
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid fa-chalkboard-user text-indigo-400 text-xs"></i>
+                            <span class="text-[9px] font-bold tracking-widest uppercase text-slate-500">Instructions</span>
+                        </div>
+                        <span id="activeModeBadge" class="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-indigo-950 text-indigo-400 border border-indigo-500/20 uppercase tracking-widest">Alternating Shift</span>
+                    </div>
+                    <!-- Proportional Font Scaling Controls -->
+                    <div class="flex items-center gap-1.5 self-start sm:self-auto bg-slate-950/80 rounded-lg px-2 py-1 border border-slate-800/60 shadow-inner">
+                        <span class="text-[9px] font-bold tracking-wider text-slate-400 uppercase mr-1">Text Zoom:</span>
+                        <button onclick="changeInstructionsFontSize(-1)" class="text-[10px] text-slate-300 hover:text-white bg-slate-900 hover:bg-slate-800 w-5 h-5 rounded flex items-center justify-center font-bold border border-slate-850 select-none active:scale-95 transition-transform" title="Shrink text">A-</button>
+                        <span id="fontSizeDisplay" class="text-[10px] font-semibold text-indigo-400 w-10 text-center">32px</span>
+                        <button onclick="changeInstructionsFontSize(1)" class="text-[10px] text-slate-300 hover:text-white bg-slate-900 hover:bg-slate-800 w-5 h-5 rounded flex items-center justify-center font-bold border border-slate-850 select-none active:scale-95 transition-transform" title="Enlarge text">A+</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ALL CONTROLS DECK: Placed cleanly under the main visual block -->
+            <div class="w-full flex flex-wrap gap-3 justify-between items-center bg-slate-900/80 border border-slate-800 rounded-xl p-3 shadow-lg">
+                <!-- Left: Status & Hotkey Indicators -->
+                <div class="flex items-center gap-3 text-[10px] text-slate-400">
+                    <span class="flex h-2 w-2 relative">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                        <span id="turnIndicatorDot" class="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
+                    </span>
+                    <div class="hidden sm:block">
+                        ⌨️ <kbd class="bg-slate-950 px-1.5 py-0.5 rounded text-slate-300">Space</kbd> Rotate | <kbd class="bg-slate-950 px-1.5 py-0.5 rounded text-slate-300">B</kbd> Undo
+                    </div>
+                    <div class="text-[10px] bg-slate-950/80 border border-slate-850 px-2.5 py-1 rounded-md flex gap-2 text-slate-400">
+                        <span>Total Roster: <strong id="totalCountText" class="text-slate-200">0</strong></span>
+                        <span>•</span>
+                        <span>Round: <strong id="matchCountText" class="text-indigo-400 font-extrabold">1</strong></span>
+                    </div>
+                </div>
+
+                <!-- Center/Right: Shrunk Control Action Deck -->
+                <div class="flex flex-wrap items-center gap-2">
+                    <button onclick="toggleMute()" id="muteBtn" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 text-xs">
+                        <i id="muteIcon" class="fa-solid fa-volume-high text-indigo-400"></i>
+                        <span class="hidden md:inline">Sounds On</span>
+                    </button>
+
+                    <button onclick="openEditRosterModal()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 py-1.5 px-3 rounded-lg border border-slate-700/50 transition-colors flex items-center gap-1.5">
+                        <i class="fa-solid fa-user-pen"></i> Edit Prompt & Roster
+                    </button>
+
+                    <button onclick="undo()" id="undoBtn" class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold py-1.5 px-3 rounded-lg transition-all border border-slate-700/50 flex items-center gap-1.5 text-xs">
+                        <i class="fa-solid fa-chevron-left"></i> Undo
+                    </button>
+
+                    <button onclick="advanceTurn()" id="advanceBtn" class="bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold py-1.5 px-5 rounded-lg transition-all flex items-center gap-2 text-xs shadow-md shadow-indigo-600/20">
+                        <span id="advanceBtnText">Rotate Conveyor</span>
+                        <i class="fa-solid fa-chevron-right text-[10px] animate-pulse"></i>
+                    </button>
+
+                    <button onclick="triggerResetRequest()" class="text-xs bg-slate-800/50 hover:bg-red-950 hover:text-red-200 text-slate-400 py-1.5 px-3 rounded-lg border border-transparent hover:border-red-900/50 transition-colors flex items-center gap-1.5">
+                        <i class="fa-solid fa-arrow-rotate-left"></i> Start Over
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Round Complete Celebration Overlay Modal -->
+    <div id="roundCompleteModal" class="fixed inset-0 bg-slate-950/90 backdrop-blur flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-slate-900 border-2 border-indigo-500 w-full max-w-md rounded-2xl p-8 shadow-2xl relative text-center spotlight-pulse">
+            <div class="w-16 h-16 bg-indigo-600/20 text-indigo-400 rounded-full flex items-center justify-center mx-auto mb-4 border border-indigo-500/30">
+                <i class="fa-solid fa-crown text-3xl"></i>
+            </div>
+            <h2 class="text-2xl font-extrabold text-white mb-2">Round Complete!</h2>
+            <p class="text-slate-300 text-xs leading-relaxed mb-6">Both queues have completed their circuit and returned to their starting arrangement!</p>
+            <div class="flex flex-col gap-2">
+                <button onclick="closeRoundCompleteModal()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs py-3 rounded-xl transition-all">
+                    🎉 Keep Rolling!
+                </button>
+                <button onclick="triggerResetFromComplete()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs py-2.5 rounded-xl transition-colors">
+                    Back to Configurator
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Dialog Box / Notification Toast (Replaces block alert) -->
+    <div id="toastNotification" class="fixed bottom-4 right-4 bg-slate-900 border border-indigo-500/30 text-slate-100 px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 transform translate-y-20 opacity-0 transition-all duration-300 z-50">
+        <div class="bg-indigo-600 text-white p-1.5 rounded-lg flex items-center justify-center">
+            <i id="toastIcon" class="fa-solid fa-circle-info"></i>
+        </div>
+        <div class="text-xs font-medium" id="toastMessage">Notification message</div>
+    </div>
+
+    <!-- Custom Confirmation Modal (Replaces browser confirm) -->
+    <div id="confirmModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-slate-900 border border-slate-800 w-full max-w-sm rounded-2xl p-6 shadow-2xl relative">
+            <h3 class="text-base font-bold text-white mb-2 flex items-center gap-2">
+                <i class="fa-solid fa-circle-question text-amber-500"></i> Are you sure?
+            </h3>
+            <p id="confirmModalText" class="text-slate-400 text-xs mb-6">This action will return you to the setup screen.</p>
+            <div class="flex justify-end gap-2 text-xs">
+                <button onclick="closeConfirmModal(false)" class="bg-slate-800 hover:bg-slate-700 text-slate-300 py-2 px-4 rounded-lg transition-colors">
+                    Cancel
+                </button>
+                <button id="confirmModalYesBtn" class="bg-red-600 hover:bg-red-500 text-white font-bold py-2 px-4 rounded-lg transition-colors">
+                    Yes, Proceed
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Interactive Live Roster & Prompt Editor Modal -->
+    <div id="rosterModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-slate-900 border border-slate-800 w-full max-w-2xl rounded-2xl p-6 shadow-2xl relative">
+            <button onclick="closeEditRosterModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+            <h3 class="text-lg font-bold text-white mb-2 flex items-center gap-2">
+                <i class="fa-solid fa-user-gear text-indigo-400"></i> Manage Mid-Game Roster & Prompt
+            </h3>
+            <p class="text-slate-400 text-xs mb-4">Add late students, remove absent students, or modify active instruction prompt mid-rotation.</p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[200px] overflow-y-auto mb-4 pr-2">
+                <!-- Line A Editor -->
+                <div class="space-y-2">
+                    <h4 class="text-[10px] font-bold text-emerald-400 uppercase tracking-widest flex justify-between">
+                        <span>Line A List</span>
+                        <span id="modalACount" class="text-slate-500 font-normal">0 names</span>
+                    </h4>
+                    <div class="flex gap-2">
+                        <input id="addStudentAInput" type="text" class="bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-200 flex-grow placeholder-slate-600 focus:outline-none focus:border-emerald-500" placeholder="New student name..." onkeydown="if(event.key === 'Enter') addStudentMidGame('A')">
+                        <button onclick="addStudentMidGame('A')" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold p-1.5 rounded-lg transition-colors flex items-center justify-center">
+                            <i class="fa-solid fa-plus text-xs px-1"></i>
+                        </button>
+                    </div>
+                    <ul id="editorListA" class="space-y-1 bg-slate-950/50 p-2 rounded-xl border border-slate-900 max-h-[100px] overflow-y-auto">
+                        <!-- Dynamic elements -->
+                    </ul>
+                </div>
+
+                <!-- Line B Editor -->
+                <div class="space-y-2">
+                    <h4 class="text-[10px] font-bold text-amber-400 uppercase tracking-widest flex justify-between">
+                        <span>Line B List</span>
+                        <span id="modalBCount" class="text-slate-500 font-normal">0 names</span>
+                    </h4>
+                    <div class="flex gap-2">
+                        <input id="addStudentBInput" type="text" class="bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-200 flex-grow placeholder-slate-600 focus:outline-none focus:border-amber-500" placeholder="New student name..." onkeydown="if(event.key === 'Enter') addStudentMidGame('B')">
+                        <button onclick="addStudentBInput" class="bg-amber-600 hover:bg-amber-500 text-white font-bold p-1.5 rounded-lg transition-colors flex items-center justify-center">
+                            <i class="fa-solid fa-plus text-xs px-1"></i>
+                        </button>
+                    </div>
+                    <ul id="editorListB" class="space-y-1 bg-slate-950/50 p-2 rounded-xl border border-slate-900 max-h-[100px] overflow-y-auto">
+                        <!-- Dynamic elements -->
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Mid-game Mode selector -->
+            <div class="border-t border-slate-800 pt-4 mt-3">
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Change Game Mode Mid-Game</label>
+                <div class="grid grid-cols-3 gap-2">
+                    <button onclick="setMode('alternating')" id="modalModeAlternating" class="py-2 px-3 rounded-lg text-[10px] sm:text-xs font-bold transition-all border text-center">
+                        Alternating Shift
+                    </button>
+                    <button onclick="setMode('parallel')" id="modalModeParallel" class="py-2 px-3 rounded-lg text-[10px] sm:text-xs font-bold transition-all border text-center">
+                        Parallel Shift
+                    </button>
+                    <button onclick="setMode('crossover')" id="modalModeCrossover" class="py-2 px-3 rounded-lg text-[10px] sm:text-xs font-bold transition-all border text-center">
+                        Crossover Shift
+                    </button>
+                </div>
+            </div>
+
+            <!-- Mid-game Instruction editor block -->
+            <div class="border-t border-slate-800 pt-3 mt-3">
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Update Prompts / Instructions (Markdown)</label>
+                <textarea id="modalInstructionsInput" rows="2" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500 text-xs"></textarea>
+            </div>
+
+            <div class="flex justify-end gap-2 mt-4">
+                <button onclick="closeEditRosterModal()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs py-2 px-6 rounded-lg transition-colors">
+                    Save and Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Header and Navigation -->
+    <header class="border-t border-slate-800 bg-slate-900/50 backdrop-blur px-6 py-4 mt-8">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-indigo-600 text-white p-2 rounded-lg flex items-center justify-center shadow-lg shadow-indigo-500/30">
+                    <i class="fa-solid fa-arrows-spin text-lg animate-spin-slow"></i>
+                </div>
+                <div>
+                    <h1 class="text-sm font-bold tracking-tight text-white">Classroom Conveyor Belt Rotator</h1>
+                    <p class="text-[10px] text-slate-400">Perfect for structured classroom discussions, debate rotations, & active learning pairs</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <!-- Direct notification banner -->
+                <div class="text-[10px] bg-indigo-950/40 text-indigo-300 px-3 py-1.5 rounded-lg border border-indigo-500/20 animate-pulse">
+                    🎙️ Ready to share on Zoom!
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Footer Information -->
+    <footer class="text-center py-3 text-slate-600 border-t border-slate-950 bg-slate-950/40 text-[10px]">
+        Designed for interactive Zoom & hybrid classrooms. Built-in instant response logic. No tracking, no latency.
+    </footer>
+
+    <!-- Conveyor Game Logic Script -->
+    <script>
+        // Core game rosters
+        let lineA = [];
+        let lineB = [];
+        
+        // Starting configurations (for detecting "Round Complete")
+        let startingLineA = [];
+        let startingLineB = [];
+
+        // Modes of Operation: 'alternating', 'parallel', 'crossover'
+        let activeMode = 'alternating'; 
+        
+        // Track sequence of moves for Mode 1 ('A' moves to back, or 'B' moves to back)
+        let nextMover = 'B'; // Default starting mover is 'B' (Right Speaker)
+        let currentMatchNum = 1;
+        let isMuted = false;
+        let isAnimating = false; // Protect rendering states during slide loops
+
+        // Custom base font size state for Instruction Block - default is now 32px
+        let instructionsFontSize = 32; 
+        
+        // State logs for complete Undo capabilities
+        let actionHistory = [];
+
+        // Tab selection states
+        let activeTab = 'single';
+
+        // Custom Confirmation variables
+        let confirmCallback = null;
+
+        function setMode(mode) {
+            activeMode = mode;
+            // Clear prior selection card styles
+            const cards = ['Alternating', 'Parallel', 'Crossover'];
+            cards.forEach(c => {
+                const element = document.getElementById(`modeCard${c}`);
+                if (element) {
+                    if (c.toLowerCase() === mode) {
+                        element.className = "bg-indigo-950/20 hover:bg-indigo-950/40 border-2 border-indigo-500 rounded-xl p-3.5 cursor-pointer transition-all flex flex-col justify-between group";
+                        element.querySelector('span').className = "text-[9px] font-bold text-indigo-400 uppercase mt-2 block tracking-wider";
+                        element.querySelector('h3').className = "font-bold text-xs text-indigo-300";
+                    } else {
+                        element.className = "bg-slate-950/40 hover:bg-indigo-950/20 border-2 border-slate-800 rounded-xl p-3.5 cursor-pointer transition-all flex flex-col justify-between group";
+                        element.querySelector('span').className = "text-[9px] font-bold text-slate-500 uppercase mt-2 block tracking-wider";
+                        element.querySelector('h3').className = "font-bold text-xs text-slate-300";
+                    }
+                }
+
+                // Synchronize modal buttons styling mid-game
+                const modalBtn = document.getElementById(`modalMode${c}`);
+                if (modalBtn) {
+                    if (c.toLowerCase() === mode) {
+                        modalBtn.className = "py-2 px-3 rounded-lg text-xs font-bold transition-all border bg-indigo-600 border-indigo-400 text-white shadow-lg shadow-indigo-600/25";
+                    } else {
+                        modalBtn.className = "py-2 px-3 rounded-lg text-xs font-bold transition-all border bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-900";
+                    }
+                }
+            });
+
+            // Dynamically update the active mode badge in the game board header immediately if visible
+            const modeBadge = document.getElementById('activeModeBadge');
+            if (modeBadge) {
+                if (activeMode === 'alternating') {
+                    modeBadge.innerText = 'Alternating Shift';
+                    modeBadge.className = 'text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-500/20 uppercase tracking-widest';
+                } else if (activeMode === 'parallel') {
+                    modeBadge.innerText = 'Parallel Shift';
+                    modeBadge.className = 'text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-400 border border-cyan-500/20 uppercase tracking-widest';
+                } else {
+                    modeBadge.innerText = 'Crossover Shift';
+                    modeBadge.className = 'text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-fuchsia-950 text-fuchsia-400 border border-fuchsia-500/20 uppercase tracking-widest';
+                }
+            }
+
+            synthSound('highlight');
+        }
+
+        function switchTab(tab) {
+            activeTab = tab;
+            document.getElementById('tabSingle').className = tab === 'single' ? "py-2 px-4 font-semibold text-xs border-b-2 border-indigo-500 text-indigo-400 focus:outline-none transition-all" : "py-2 px-4 font-semibold text-xs border-b-2 border-transparent text-slate-400 hover:text-slate-200 focus:outline-none transition-all";
+            document.getElementById('tabDouble').className = tab === 'double' ? "py-2 px-4 font-semibold text-xs border-b-2 border-indigo-500 text-indigo-400 focus:outline-none transition-all" : "py-2 px-4 font-semibold text-xs border-b-2 border-transparent text-slate-400 hover:text-slate-200 focus:outline-none transition-all";
+            
+            if (tab === 'single') {
+                document.getElementById('panelSingle').classList.remove('hidden');
+                document.getElementById('panelDouble').classList.add('hidden');
+            } else {
+                document.getElementById('panelSingle').classList.add('hidden');
+                document.getElementById('panelDouble').classList.remove('hidden');
+            }
+        }
+
+        function loadDemoData() {
+            // First names only demo data
+            const singleInput = document.getElementById('singleRosterInput');
+            singleInput.value = [
+                "Sarah", "John", "Ellen", "Arthur", "Bruce", "Diana", 
+                "Clark", "Barry", "Hal", "Oliver", "Selina", "Lois"
+            ].join('\n');
+
+            const doubleLeft = document.getElementById('lineARosterInput');
+            doubleLeft.value = ["Bruce", "Clark", "Diana", "Barry", "Hal", "Oliver"].join('\n');
+
+            const doubleRight = document.getElementById('lineBRosterInput');
+            doubleRight.value = ["Selina", "Lois", "Barbara", "Iris", "Carol", "Dinah"].join('\n');
+            
+            // Set dynamic markdown instructions
+            const defaultMD = `### 🌟 Active Debate: Is Space Exploration Worth the Cost?
+1. **Line A Speaker:** Present one argument *supporting* space funding (e.g., scientific progress, technological spin-offs).
+2. **Line B Speaker:** Present one argument *opposing/questioning* the funding (e.g., immediate Earth priorities, high risks).
+3. **Active Reflection:** You have **90 seconds** to reach a consensus, then swap!`;
+            document.getElementById('instructionsInput').value = defaultMD;
+
+            synthSound('highlight');
+            showToast('Loaded active demo prompt and student rosters!');
+        }
+
+        // Display Custom Modal Alerts
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toastNotification');
+            const toastMsg = document.getElementById('toastMessage');
+            const toastIcon = document.getElementById('toastIcon');
+            
+            toastMsg.innerText = message;
+            if (type === 'error') {
+                toastIcon.className = 'fa-solid fa-circle-exclamation text-red-400';
+            } else {
+                toastIcon.className = 'fa-solid fa-circle-info text-indigo-400';
+            }
+            
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            synthSound('highlight');
+            
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3500);
+        }
+
+        // Display custom modal confirmation dialogs
+        function showConfirm(message, onConfirm) {
+            const modal = document.getElementById('confirmModal');
+            document.getElementById('confirmModalText').innerText = message;
+            modal.classList.remove('hidden');
+            confirmCallback = onConfirm;
+        }
+
+        function closeConfirmModal(proceed) {
+            document.getElementById('confirmModal').classList.add('hidden');
+            if (proceed && confirmCallback) {
+                confirmCallback();
+            }
+            confirmCallback = null;
+        }
+
+        // Attach confirmation action trigger
+        document.getElementById('confirmModalYesBtn').onclick = () => closeConfirmModal(true);
+
+        function startGame() {
+            if (isAnimating) return;
+            lineA = [];
+            lineB = [];
+            
+            if (activeTab === 'single') {
+                // Parse single list of names, split into two lines
+                const rawInput = document.getElementById('singleRosterInput').value;
+                const names = rawInput.split('\n').map(n => n.trim()).filter(n => n.length > 0);
+                
+                if (names.length < 2) {
+                    showToast('Please input at least 2 student names to run the game.', 'error');
+                    return;
+                }
+                
+                // Shuffle names
+                for (let i = names.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [names[i], names[j]] = [names[j], names[i]];
+                }
+
+                // Evenly split
+                names.forEach((name, idx) => {
+                    if (idx % 2 === 0) {
+                        lineA.push(name);
+                    } else {
+                        lineB.push(name);
+                    }
+                });
+
+            } else {
+                // Parse double lists
+                const rawA = document.getElementById('lineARosterInput').value;
+                const rawB = document.getElementById('lineBRosterInput').value;
+
+                lineA = rawA.split('\n').map(n => n.trim()).filter(n => n.length > 0);
+                lineB = rawB.split('\n').map(n => n.trim()).filter(n => n.length > 0);
+
+                if (lineA.length < 1 || lineB.length < 1) {
+                    showToast('Please input at least 1 student on both the Left and Right queues.', 'error');
+                    return;
+                }
+            }
+
+            // Capture initial structures to monitor round completions
+            startingLineA = [...lineA];
+            startingLineB = [...lineB];
+
+            // Setup play conditions
+            nextMover = 'B'; // Set initial mover in Alternating Mode to Right Speaker (Line B) first
+            currentMatchNum = 1;
+            actionHistory = [];
+            isAnimating = false;
+
+            // Switch screen viewport
+            document.getElementById('setupScreen').classList.add('hidden');
+            document.getElementById('gameScreen').classList.remove('hidden');
+
+            // Set play mode label indicator badge
+            const modeBadge = document.getElementById('activeModeBadge');
+            if (modeBadge) {
+                if (activeMode === 'alternating') {
+                    modeBadge.innerText = 'Alternating Shift';
+                    modeBadge.className = 'text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-500/20 uppercase tracking-widest';
+                } else if (activeMode === 'parallel') {
+                    modeBadge.innerText = 'Parallel Shift';
+                    modeBadge.className = 'text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-400 border border-cyan-500/20 uppercase tracking-widest';
+                } else {
+                    modeBadge.innerText = 'Crossover Shift';
+                    modeBadge.className = 'text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-fuchsia-950 text-fuchsia-400 border border-fuchsia-500/20 uppercase tracking-widest';
+                }
+            }
+
+            renderBoard();
+            synthSound('highlight');
+        }
+
+        // Render and update active layout state using dynamic finite sum calculations
+        function renderBoard() {
+            // Totals
+            const totalCount = lineA.length + lineB.length;
+            document.getElementById('totalCountText').innerText = totalCount;
+            document.getElementById('matchCountText').innerText = currentMatchNum;
+
+            // Turn indicator dots & button instructions
+            const turnDot = document.getElementById('turnIndicatorDot');
+            const advBtnText = document.getElementById('advanceBtnText');
+
+            if (activeMode === 'alternating') {
+                if (nextMover === 'B') {
+                    turnDot.className = 'relative inline-flex rounded-full h-2 w-2 bg-amber-500';
+                    advBtnText.innerText = "← Rotate Line B";
+                } else {
+                    turnDot.className = 'relative inline-flex rounded-full h-2 w-2 bg-emerald-500';
+                    advBtnText.innerText = "Rotate Line A →";
+                }
+            } else if (activeMode === 'parallel') {
+                turnDot.className = 'relative inline-flex rounded-full h-2 w-2 bg-cyan-500';
+                advBtnText.innerText = "Parallel Shift (Both)";
+            } else {
+                turnDot.className = 'relative inline-flex rounded-full h-2 w-2 bg-fuchsia-500';
+                advBtnText.innerText = "Crossover Shift (Both)";
+            }
+
+            // Render remaining queues on either side using geometrical series
+            const queueAContainer = document.getElementById('lineAQueue');
+            const queueBContainer = document.getElementById('lineBQueue');
+
+            renderGeometricQueue(queueAContainer, lineA, true);
+            renderGeometricQueue(queueBContainer, lineB, false);
+            
+            // Render markdown prompt instructions
+            updateInstructionsDisplay();
+        }
+
+        // Adaptive font-scaling helper based on card pixel width and string length
+        function getAdaptiveFontSize(name, cardWidthPx, isSpeaker) {
+            const baseSize = isSpeaker ? 32 : 24; 
+            const availableWidth = Math.max(12, cardWidthPx - 18);
+            const charWidthFactor = 0.65;
+            const maxFontToFit = availableWidth / (name.length * charWidthFactor);
+            const floorSize = isSpeaker ? 14 : 9; 
+            const calculatedSize = Math.max(floorSize, Math.min(baseSize, maxFontToFit));
+            return `${calculatedSize}px`;
+        }
+
+        // Geometric spacing calculator rendering lists contiguous in-line
+        function renderGeometricQueue(container, line, isLineA) {
+            container.innerHTML = '';
+            
+            const N_total = line.length;
+            if (N_total === 0) {
+                container.innerHTML = `<div class="text-[10px] text-slate-500 italic w-full text-center py-5">Empty Line</div>`;
+                return;
+            }
+
+            const N = Math.min(N_total, 7);
+            const k = 0.6;
+            const W0 = (100 * (1 - k)) / (1 - Math.pow(k, N));
+            const containerWidth = container.clientWidth || 450;
+
+            for (let i = 0; i < N; i++) {
+                const width = W0 * Math.pow(k, i);
+                const offset = (W0 * (1 - Math.pow(k, i))) / (1 - k);
+                const cardWidthPx = (width / 100) * containerWidth;
+
+                const card = document.createElement('div');
+                card.className = "absolute top-4 bottom-2 rounded-xl flex items-center justify-center overflow-visible px-1 select-none border shadow-md";
+                
+                if (isLineA) {
+                    card.style.right = `${offset}%`;
+                } else {
+                    card.style.left = `${offset}%`;
+                }
+                card.style.width = `${width}%`;
+                card.style.zIndex = 100 - i;
+
+                const calculatedFontSize = getAdaptiveFontSize(line[i], cardWidthPx, i === 0);
+
+                if (i === 0) {
+                    // Active Speaker Card
+                    const themeColor = isLineA ? 'emerald' : 'amber';
+                    const pulseClass = isLineA ? 'active-speaker-emerald' : 'active-speaker-amber';
+                    
+                    card.classList.add(pulseClass, 'border');
+
+                    const dotPositionClass = isLineA ? 'top-1.5 right-2' : 'top-1.5 left-2';
+
+                    // Compute labels based on active modes
+                    let speakerLabel = 'A';
+                    if (activeMode === 'alternating') {
+                        // Alternate label positions
+                        if (nextMover === 'B') {
+                            speakerLabel = isLineA ? 'A' : 'B';
+                        } else {
+                            speakerLabel = isLineA ? 'B' : 'A';
+                        }
+                    } else {
+                        // Mode 2 and 3: Left is always A, Right is B
+                        speakerLabel = isLineA ? 'A' : 'B';
+                    }
+
+                    // Dynamically render indicator floating badges OUTSIDE & ABOVE the Speaker cards with vibrant high-contrast colors (Violet & Pink)
+                    const badgeColor = speakerLabel === 'A' ? 'bg-violet-600 border-violet-400' : 'bg-pink-600 border-pink-400';
+
+                    card.innerHTML = `
+                        <!-- Floating Large Header Label Pill (Fully outside the container) -->
+                        <div class="absolute -top-10 left-1/2 -translate-x-1/2 px-5 py-1.5 rounded-xl text-[14px] sm:text-base font-black tracking-widest uppercase ${badgeColor} text-white border-2 shadow-2xl z-50 whitespace-nowrap">
+                            ${speakerLabel}
+                        </div>
+                        <div class="absolute ${dotPositionClass} flex h-2 w-2">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-${themeColor}-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-2 w-2 bg-${themeColor}-500"></span>
+                        </div>
+                        <div class="flex items-center justify-center w-full h-full relative overflow-hidden px-2 mt-1">
+                            <h3 class="font-extrabold text-white text-center w-full whitespace-nowrap" style="font-size: ${calculatedFontSize}; line-height: 1.1;" title="${line[i]}">${line[i]}</h3>
+                        </div>
+                    `;
+                } else {
+                    // Waiting Queue Elements Style
+                    const borderTheme = isLineA ? 'border-emerald-500/20' : 'border-amber-500/20';
+                    card.classList.add('bg-slate-900/90', borderTheme);
+
+                    let innerContent = '';
+                    if (i <= 2) {
+                        innerContent = `
+                            <div class="font-semibold text-slate-300 text-center w-full px-1.5 whitespace-nowrap overflow-visible" style="font-size: ${calculatedFontSize}; line-height: 1.1;" title="${line[i]}">
+                                ${line[i]}
+                            </div>
+                        `;
+                    } else if (width > 12) {
+                        innerContent = `
+                            <div class="truncate font-semibold text-slate-400 text-center w-full px-1" style="font-size: ${calculatedFontSize}; line-height: 1.1;" title="${line[i]}">
+                                ${line[i]}
+                            </div>
+                        `;
+                    } else {
+                        innerContent = `
+                            <div class="w-full h-full ${isLineA ? 'bg-emerald-500/30' : 'bg-amber-500/30'} rounded animate-pulse" title="${line[i]}"></div>
+                        `;
+                    }
+
+                    card.innerHTML = `
+                        <div class="flex items-center justify-center w-full h-full relative overflow-hidden">
+                            ${innerContent}
+                        </div>
+                    `;
+                }
+                container.appendChild(card);
+            }
+        }
+
+        // Font scaling actions - Step size is 2px, limits are now 12px to 72px
+        function changeInstructionsFontSize(delta) {
+            instructionsFontSize = Math.max(12, Math.min(72, instructionsFontSize + delta * 2));
+            
+            const display = document.getElementById('fontSizeDisplay');
+            if (display) {
+                display.innerText = `${instructionsFontSize}px`;
+            }
+            
+            const output = document.getElementById('instructionsOutput');
+            if (output) {
+                output.style.fontSize = `${instructionsFontSize}px`;
+            }
+        }
+
+        // Escapes loose brackets around text to prevent Markdown engines from seeing them as HTML tag selectors
+        function sanitizeLooseBrackets(text) {
+            // Escape all '<' characters to prevent browser parsing them as raw HTML tags (e.g. <noun>)
+            let escaped = text.replace(/</g, '&lt;');
+            
+            // Escape '>' characters unless they represent blockquotes at the beginning of a line
+            return escaped.split('\n').map(line => {
+                if (/^\s*>/.test(line)) {
+                    let firstIndex = line.indexOf('>');
+                    return line.substring(0, firstIndex + 1) + line.substring(firstIndex + 1).replace(/>/g, '&gt;');
+                } else {
+                    return line.replace(/>/g, '&gt;');
+                }
+            }).join('\n');
+        }
+
+        // Update Instruction display from state
+        function updateInstructionsDisplay() {
+            const rawMarkdownContent = document.getElementById('instructionsInput').value || '*No active prompt assigned.*';
+            
+            // Step 1: Escape loose angled brackets so `<*B’s name*>` does not get parsed as an unclosed HTML block
+            const sanitizedMarkdown = sanitizeLooseBrackets(rawMarkdownContent);
+            
+            const outputElement = document.getElementById('instructionsOutput');
+            if (typeof marked !== 'undefined') {
+                // Step 2: Configure marked parser to run with GFM style active carriage returns
+                marked.setOptions({
+                    breaks: true,
+                    gfm: true
+                });
+                outputElement.innerHTML = marked.parse(sanitizedMarkdown);
+            } else {
+                outputElement.innerText = sanitizedMarkdown;
+            }
+            
+            // Set scale size
+            outputElement.style.fontSize = `${instructionsFontSize}px`;
+            const display = document.getElementById('fontSizeDisplay');
+            if (display) {
+                display.innerText = `${instructionsFontSize}px`;
+            }
+            
+            // Sync current configuration into modal editor textfield too
+            const modalPromptText = document.getElementById('modalInstructionsInput');
+            if (modalPromptText) {
+                modalPromptText.value = rawMarkdownContent;
+            }
+        }
+
+        // Primary progression engine coordinating physical mode rules & structural shift animations
+        function advanceTurn() {
+            if (isAnimating) return; // Prevent logical collapse during flight states
+
+            // Append state to undo logs
+            actionHistory.push({
+                lineA: [...lineA],
+                lineB: [...lineB],
+                nextMover: nextMover,
+                currentMatchNum: currentMatchNum
+            });
+
+            if (activeMode === 'alternating') {
+                runAlternatingAdvance();
+            } else if (activeMode === 'parallel') {
+                runParallelAdvance();
+            } else if (activeMode === 'crossover') {
+                runCrossoverAdvance();
+            }
+        }
+
+        // Mode 1 Advance Logic (Alternating single conveyor rotate - B is first mover)
+        function runAlternatingAdvance() {
+            const isLineA = (nextMover === 'A');
+            const container = isLineA ? document.getElementById('lineAQueue') : document.getElementById('lineBQueue');
+            const cards = Array.from(container.children);
+
+            if (cards.length > 1) {
+                isAnimating = true;
+                synthSound('whoosh');
+
+                const activeCard = cards[0];
+                const clone = activeCard.cloneNode(true);
+                clone.classList.remove('active-speaker-emerald', 'active-speaker-amber');
+                clone.style.zIndex = "50"; 
+
+                const containerWidth = container.clientWidth || 450;
+                const cardWidthPx = activeCard.getBoundingClientRect().width || 120;
+                const travelDist = containerWidth - cardWidthPx;
+                
+                clone.style.setProperty('--travel-distance', `${travelDist}px`);
+                clone.classList.add(isLineA ? 'animate-loop-a' : 'animate-loop-b');
+                
+                container.appendChild(clone);
+                activeCard.style.opacity = '0';
+                activeCard.style.pointerEvents = 'none';
+
+                animateQueueShiftForward(container, cards, isLineA);
+
+                setTimeout(() => {
+                    commitAlternatingAdvanceLogic();
+                    isAnimating = false;
+                    checkRoundCompletion();
+                }, 850); // Synchronize with smooth 0.85s loops
+
+            } else {
+                synthSound('whoosh');
+                commitAlternatingAdvanceLogic();
+                checkRoundCompletion();
+            }
+        }
+
+        function commitAlternatingAdvanceLogic() {
+            if (nextMover === 'B') {
+                if (lineB.length > 0) {
+                    const mover = lineB.shift();
+                    lineB.push(mover);
+                }
+                nextMover = 'A';
+            } else {
+                if (lineA.length > 0) {
+                    const mover = lineA.shift();
+                    lineA.push(mover);
+                }
+                nextMover = 'B';
+                currentMatchNum++; // Increment match round upon completing full alternating swap loop
+            }
+            renderBoard();
+        }
+
+        // Mode 2 Advance Logic (Parallel rotation loops)
+        function runParallelAdvance() {
+            const containerA = document.getElementById('lineAQueue');
+            const containerB = document.getElementById('lineBQueue');
+            const cardsA = Array.from(containerA.children);
+            const cardsB = Array.from(containerB.children);
+
+            const canAnimateA = cardsA.length > 1;
+            const canAnimateB = cardsB.length > 1;
+
+            if (canAnimateA || canAnimateB) {
+                isAnimating = true;
+                synthSound('whoosh');
+
+                if (canAnimateA) {
+                    triggerSingleLocalLoop(containerA, cardsA, true);
+                }
+                if (canAnimateB) {
+                    triggerSingleLocalLoop(containerB, cardsB, false);
+                }
+
+                setTimeout(() => {
+                    commitParallelAdvanceLogic();
+                    isAnimating = false;
+                    checkRoundCompletion();
+                }, 850);
+            } else {
+                synthSound('whoosh');
+                commitParallelAdvanceLogic();
+                checkRoundCompletion();
+            }
+        }
+
+        function triggerSingleLocalLoop(container, cards, isLineA) {
+            const activeCard = cards[0];
+            const clone = activeCard.cloneNode(true);
+            clone.classList.remove('active-speaker-emerald', 'active-speaker-amber');
+            clone.style.zIndex = "50"; 
+
+            const containerWidth = container.clientWidth || 450;
+            const cardWidthPx = activeCard.getBoundingClientRect().width || 120;
+            const travelDist = containerWidth - cardWidthPx;
+            
+            clone.style.setProperty('--travel-distance', `${travelDist}px`);
+            clone.classList.add(isLineA ? 'animate-loop-a' : 'animate-loop-b');
+            
+            container.appendChild(clone);
+            activeCard.style.opacity = '0';
+            activeCard.style.pointerEvents = 'none';
+
+            animateQueueShiftForward(container, cards, isLineA);
+        }
+
+        function commitParallelAdvanceLogic() {
+            if (lineA.length > 0) {
+                const mover = lineA.shift();
+                lineA.push(mover);
+            }
+            if (lineB.length > 0) {
+                const mover = lineB.shift();
+                lineB.push(mover);
+            }
+            currentMatchNum++;
+            renderBoard();
+        }
+
+        // Mode 3 Advance Logic (Parallel crossover shift loops with obvious arches)
+        function runCrossoverAdvance() {
+            const containerA = document.getElementById('lineAQueue');
+            const containerB = document.getElementById('lineBQueue');
+            const cardsA = Array.from(containerA.children);
+            const cardsB = Array.from(containerB.children);
+
+            const canAnimateA = cardsA.length > 1;
+            const canAnimateB = cardsB.length > 1;
+
+            if (canAnimateA && canAnimateB) {
+                isAnimating = true;
+                synthSound('whoosh');
+
+                // Compute exact boundary dimensions of the grandparent block for crossover scaling path
+                const containerWidthA = containerA.clientWidth || 450;
+                const cardWidthPxA = cardsA[0].getBoundingClientRect().width || 120;
+                
+                // Crossover Distance: flies across the middle spotlight separation completely
+                const centerGapWidth = 44; // width of middle heads graphic + padding gaps
+                const crossDistance = containerWidthA + centerGapWidth + (containerWidthA - cardWidthPxA);
+
+                // Setup Crossover Clones with slow obvious overlapping arches
+                triggerCrossoverLoopFlight(containerA, cardsA, true, crossDistance);
+                triggerCrossoverLoopFlight(containerB, cardsB, false, crossDistance);
+
+                setTimeout(() => {
+                    commitCrossoverAdvanceLogic();
+                    isAnimating = false;
+                    checkRoundCompletion();
+                }, 1300); // Extended 1.3s delay matching slower dynamic keyframes
+            } else {
+                // Instantly advance logic if lines are too short
+                synthSound('whoosh');
+                commitCrossoverAdvanceLogic();
+                checkRoundCompletion();
+            }
+        }
+
+        function triggerCrossoverLoopFlight(container, cards, isLineA, crossDistance) {
+            const activeCard = cards[0];
+            const clone = activeCard.cloneNode(true);
+            clone.classList.remove('active-speaker-emerald', 'active-speaker-amber');
+            clone.style.zIndex = "60"; // Layer flight higher than normal loops
+
+            clone.style.setProperty('--crossover-distance', `${crossDistance}px`);
+            clone.classList.add(isLineA ? 'animate-crossover-a' : 'animate-crossover-b');
+
+            container.appendChild(clone);
+            activeCard.style.opacity = '0';
+            activeCard.style.pointerEvents = 'none';
+
+            animateQueueShiftForward(container, cards, isLineA);
+        }
+
+        function commitCrossoverAdvanceLogic() {
+            if (lineA.length > 0 && lineB.length > 0) {
+                const moverA = lineA.shift();
+                const moverB = lineB.shift();
+                // Cross join opposite tails
+                lineA.push(moverB);
+                lineB.push(moverA);
+            }
+            currentMatchNum++;
+            renderBoard();
+        }
+
+        // Parallel forward slide elements transition orchestrator with smooth curves
+        function animateQueueShiftForward(container, cards, isLineA) {
+            const k = 0.6;
+            const N_total = isLineA ? lineA.length : lineB.length;
+            const N = Math.min(N_total, 7);
+            const W0 = (100 * (1 - k)) / (1 - Math.pow(k, N));
+            const containerWidth = container.clientWidth || 450;
+            const slideDuration = activeMode === 'crossover' ? '1.3s' : '0.85s';
+
+            for (let i = 1; i < cards.length; i++) {
+                const targetIdx = i - 1;
+                const width = W0 * Math.pow(k, targetIdx);
+                const offset = (W0 * (1 - Math.pow(k, targetIdx))) / (1 - k);
+                const nextCardWidthPx = (width / 100) * containerWidth;
+
+                const card = cards[i];
+                card.style.transition = `all ${slideDuration} cubic-bezier(0.25, 1, 0.5, 1)`;
+                
+                if (isLineA) {
+                    card.style.right = `${offset}%`;
+                } else {
+                    card.style.left = `${offset}%`;
+                }
+                card.style.width = `${width}%`;
+                card.style.zIndex = (100 - targetIdx).toString();
+
+                const name = isLineA ? lineA[i] : lineB[i];
+                const calculatedFontSize = getAdaptiveFontSize(name, nextCardWidthPx, targetIdx === 0);
+                const textEl = card.querySelector('h3') || card.querySelector('div > div');
+                
+                if (textEl) {
+                    textEl.style.transition = `font-size ${slideDuration} cubic-bezier(0.25, 1, 0.5, 1)`;
+                    textEl.style.fontSize = calculatedFontSize;
+                }
+
+                if (targetIdx === 0) {
+                    card.className = "absolute top-4 bottom-2 rounded-xl flex items-center justify-center overflow-hidden px-1 select-none border shadow-md " + 
+                        (isLineA ? 'active-speaker-emerald' : 'active-speaker-amber');
+                }
+            }
+        }
+
+        // Round completion algorithm checks configurations
+        function checkRoundCompletion() {
+            if (actionHistory.length === 0) return;
+
+            const isLineAMatching = JSON.stringify(lineA) === JSON.stringify(startingLineA);
+            const isLineBMatching = JSON.stringify(lineB) === JSON.stringify(startingLineB);
+
+            if (isLineAMatching && isLineBMatching) {
+                setTimeout(() => {
+                    showRoundCompleteModal();
+                }, 300);
+            }
+        }
+
+        // Celebrate Round Completion
+        function showRoundCompleteModal() {
+            document.getElementById('roundCompleteModal').classList.remove('hidden');
+            // Play sweet synthesizer success chime
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
+            osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.15); // E5
+            osc.frequency.setValueAtTime(783.99, ctx.currentTime + 0.3); // G5
+            osc.frequency.setValueAtTime(1046.50, ctx.currentTime + 0.45); // C6
+            gain.gain.setValueAtTime(0.15, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.8);
+            osc.start();
+            osc.stop(ctx.currentTime + 0.8);
+        }
+
+        function closeRoundCompleteModal() {
+            document.getElementById('roundCompleteModal').classList.add('hidden');
+            showToast('Keep rolling! Rotations continued.');
+        }
+
+        function triggerResetFromComplete() {
+            document.getElementById('roundCompleteModal').classList.add('hidden');
+            document.getElementById('gameScreen').classList.add('hidden');
+            document.getElementById('setupScreen').classList.remove('hidden');
+            showToast('Returned to configurator.');
+        }
+
+        function undo() {
+            if (isAnimating) return;
+            if (actionHistory.length === 0) {
+                showToast('No previous turns logged to undo.', 'error');
+                return;
+            }
+
+            const prevState = actionHistory.pop();
+            lineA = prevState.lineA;
+            lineB = prevState.lineB;
+            nextMover = prevState.nextMover;
+            currentMatchNum = prevState.currentMatchNum;
+
+            synthSound('highlight');
+            renderBoard();
+            showToast('Reverted last conveyor action.');
+        }
+
+        function triggerResetRequest() {
+            if (isAnimating) return;
+            showConfirm('Are you sure you want to stop active rotations and return to setup?', () => {
+                document.getElementById('gameScreen').classList.add('hidden');
+                document.getElementById('setupScreen').classList.remove('hidden');
+                synthSound('highlight');
+                showToast('Returned to configurator.');
+            });
+        }
+
+        // Live Mid-Game Modal controls
+        function openEditRosterModal() {
+            if (isAnimating) return;
+            document.getElementById('rosterModal').classList.remove('hidden');
+            renderRosterEditor();
+            setMode(activeMode); // Ensure modal mode select buttons align with selected mode active colors
+        }
+
+        function closeEditRosterModal() {
+            const promptValue = document.getElementById('modalInstructionsInput').value;
+            document.getElementById('instructionsInput').value = promptValue;
+
+            document.getElementById('rosterModal').classList.add('hidden');
+            renderBoard();
+        }
+
+        function renderRosterEditor() {
+            const listA = document.getElementById('editorListA');
+            const listB = document.getElementById('editorListB');
+            listA.innerHTML = '';
+            listB.innerHTML = '';
+
+            document.getElementById('modalACount').innerText = `${lineA.length} students`;
+            document.getElementById('modalBCount').innerText = `${lineB.length} students`;
+
+            // Draw Queue A
+            lineA.forEach((name, index) => {
+                const li = document.createElement('li');
+                li.className = "flex justify-between items-center bg-slate-900 px-3 py-1 rounded-lg border border-slate-800 text-xs text-slate-300";
+                li.innerHTML = `
+                    <span class="truncate pr-2">${index === 0 ? '🎙️ ' : ''}${name}</span>
+                    <button onclick="removeStudentMidGame('A', ${index})" class="text-red-400 hover:text-red-300 p-1">
+                        <i class="fa-solid fa-trash-can text-xs"></i>
+                    </button>
+                `;
+                listA.appendChild(li);
+            });
+
+            // Draw Queue B
+            lineB.forEach((name, index) => {
+                const li = document.createElement('li');
+                li.className = "flex justify-between items-center bg-slate-900 px-3 py-1 rounded-lg border border-slate-800 text-xs text-slate-300";
+                li.innerHTML = `
+                    <span class="truncate pr-2">${index === 0 ? '🎙️ ' : ''}${name}</span>
+                    <button onclick="removeStudentMidGame('B', ${index})" class="text-red-400 hover:text-red-300 p-1">
+                        <i class="fa-solid fa-trash-can text-xs"></i>
+                    </button>
+                `;
+                listB.appendChild(li);
+            });
+        }
+
+        function addStudentMidGame(line) {
+            const input = document.getElementById(`addStudent${line}Input`);
+            const val = input.value.trim();
+            if (!val) return;
+
+            if (line === 'A') {
+                lineA.push(val);
+            } else {
+                lineB.push(val);
+            }
+
+            input.value = '';
+            synthSound('highlight');
+            renderRosterEditor();
+            showToast(`Added ${val} to Queue Line ${line}`);
+        }
+
+        function removeStudentMidGame(line, index) {
+            let removedName = '';
+            if (line === 'A') {
+                if (lineA.length <= 1 && lineB.length > 0) {
+                    showToast('Line A cannot be completely empty while Line B exists.', 'error');
+                    return;
+                }
+                removedName = lineA[index];
+                lineA.splice(index, 1);
+            } else {
+                if (lineB.length <= 1 && lineA.length > 0) {
+                    showToast('Line B cannot be completely empty while Line A exists.', 'error');
+                    return;
+                }
+                removedName = lineB[index];
+                lineB.splice(index, 1);
+            }
+            synthSound('highlight');
+            renderRosterEditor();
+            if (removedName) {
+                showToast(`Removed ${removedName} from Roster`);
+            }
+        }
+
+        // Web Audio Synthesizer Pop sounds
+        function synthSound(type) {
+            if (isMuted) return;
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                if (type === 'whoosh') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(320, ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(110, ctx.currentTime + 0.3);
+                    gain.gain.setValueAtTime(0.2, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.3);
+                } else if (type === 'highlight') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(500, ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.12);
+                    gain.gain.setValueAtTime(0.12, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.12);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.12);
+                }
+            } catch (e) {
+                console.warn('Browser Audio Engine blocked before click registration.');
+            }
+        }
+
+        function toggleMute() {
+            isMuted = !isMuted;
+            const btn = document.getElementById('muteBtn');
+            const icon = document.getElementById('muteIcon');
+            if (isMuted) {
+                icon.className = 'fa-solid fa-volume-xmark text-slate-500';
+                btn.className = 'bg-slate-800 hover:bg-slate-700 text-slate-500 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 text-xs';
+                btn.querySelector('span').innerText = "Sounds Off";
+            } else {
+                icon.className = 'fa-solid fa-volume-high text-indigo-400';
+                btn.className = 'bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 text-xs';
+                btn.querySelector('span').innerText = "Sounds On";
+                synthSound('highlight');
+            }
+        }
+
+        // Handle quick hotkeys
+        document.addEventListener('keydown', function(event) {
+            // Prohibit key actions if user is focused inside input elements
+            if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') {
+                return;
+            }
+
+            if (event.code === 'Space') {
+                event.preventDefault(); // Stop standard browser scrolling on Space
+                if (!document.getElementById('gameScreen').classList.contains('hidden')) {
+                    advanceTurn();
+                }
+            } else if (event.code === 'KeyB' || event.code === 'Backspace' || event.code === 'ArrowLeft') {
+                if (!document.getElementById('gameScreen').classList.contains('hidden')) {
+                    undo();
+                }
+            }
+        });
+
+        // Dynamic window resizing auto-recalculate listener
+        window.addEventListener('resize', () => {
+            if (!document.getElementById('gameScreen').classList.contains('hidden')) {
+                renderBoard();
+            }
+        });
+    </script>
+</body>
+</html>

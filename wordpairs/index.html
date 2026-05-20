@@ -1,0 +1,1104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Koine Memory Engine</title>
+
+<style>
+html,body{
+  margin:0;
+  height:100%;
+  font-family:system-ui;
+  background:#f5edd7;
+  overflow:hidden;
+}
+
+:root{
+  --card-size:90px;
+  --grid-gap:10px;
+  --panel-width:320px;
+  --label-width:76px;
+  --col-label-height:44px;
+  --radius:14px;
+  --big-emoji:120px;
+  --big-greek:34px;
+  --big-gloss:24px;
+}
+
+#app{
+  height:100vh;
+  display:flex;
+  flex-direction:column;
+}
+
+#header{
+  display:flex;
+  justify-content:flex-end;
+  align-items:center;
+  padding:8px 12px;
+  flex-shrink:0;
+}
+
+#deckSelect{
+  background:white;
+  border:none;
+  border-radius:14px;
+  padding:8px 14px;
+  font-weight:700;
+  font-size:1.05rem;
+  box-shadow:0 2px 6px rgba(0,0,0,.14);
+  max-width:min(520px,60vw);
+}
+
+#main{
+  flex:1;
+  display:flex;
+  justify-content:center;
+  align-items:stretch;
+  gap:16px;
+  padding:8px 12px;
+  box-sizing:border-box;
+  min-height:0;
+  overflow:hidden;
+}
+
+#board{
+  display:grid;
+  grid-template-columns:var(--label-width) auto;
+  grid-template-rows:var(--col-label-height) auto;
+  gap:var(--grid-gap);
+  align-content:center;
+  justify-content:center;
+}
+
+#colLabels{
+  grid-column:2;
+  grid-row:1;
+  display:grid;
+  grid-template-columns:repeat(var(--cols),var(--card-size));
+  gap:var(--grid-gap);
+}
+
+.colLabel{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-weight:700;
+  font-size:calc(var(--card-size)*0.24);
+  border-radius:10px;
+  cursor:pointer;
+  user-select:none;
+  transition:background .15s ease, transform .15s ease;
+}
+
+.colLabel:hover{
+  background:rgba(239,185,78,.35);
+}
+
+#rowLabels{
+  grid-column:1;
+  grid-row:2;
+  display:grid;
+  grid-template-rows:repeat(var(--rows),var(--card-size));
+  gap:var(--grid-gap);
+}
+
+.rowLabel{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  text-align:right;
+  padding-right:6px;
+  box-sizing:border-box;
+  font-weight:700;
+  line-height:1.05;
+  font-size:calc(var(--card-size)*0.15);
+  border-radius:10px;
+  cursor:pointer;
+  user-select:none;
+  transition:background .15s ease, transform .15s ease;
+}
+
+.rowLabel:hover{
+  background:rgba(239,185,78,.35);
+}
+
+.labelSelected{
+  background:#efb94e !important;
+  transform:scale(1.04);
+}
+
+#grid{
+  grid-column:2;
+  grid-row:2;
+  display:grid;
+  grid-template-columns:repeat(var(--cols),var(--card-size));
+  grid-template-rows:repeat(var(--rows),var(--card-size));
+  gap:var(--grid-gap);
+}
+
+.card{
+  width:var(--card-size);
+  height:var(--card-size);
+  perspective:900px;
+  cursor:pointer;
+}
+
+.card.coordCol .front,
+.card.coordCol .back,
+.card.coordRow .front,
+.card.coordRow .back{
+  box-shadow:
+    inset 0 0 0 999px rgba(255,0,140,.22),
+    0 2px 6px rgba(0,0,0,.2);
+}
+
+.card.coordCol.coordRow .front,
+.card.coordCol.coordRow .back{
+  box-shadow:
+    inset 0 0 0 999px rgba(255,0,140,.32),
+    0 0 0 4px #efb94e,
+    0 2px 6px rgba(0,0,0,.2);
+}
+
+.inner{
+  width:100%;
+  height:100%;
+  position:relative;
+  transform-style:preserve-3d;
+  transition:transform .35s ease, filter .25s ease;
+}
+
+.card.flipped .inner{
+  transform:rotateY(180deg);
+}
+
+.face{
+  position:absolute;
+  inset:0;
+  border-radius:var(--radius);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  backface-visibility:hidden;
+  box-shadow:0 2px 6px rgba(0,0,0,.2);
+}
+
+.front{
+  background:#efb94e;
+  font-size:calc(var(--card-size)*0.33);
+}
+
+.back{
+  background:white;
+  transform:rotateY(180deg);
+  padding:4%;
+  box-sizing:border-box;
+}
+
+.cardContent{
+  width:100%;
+  height:100%;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  gap:1%;
+}
+
+.visual{
+  font-size:calc(var(--card-size)*0.58);
+  line-height:.95;
+}
+
+.greek{
+  font-weight:bold;
+  font-size:calc(var(--card-size)*0.165);
+  line-height:1.02;
+}
+
+.gloss{
+  font-size:calc(var(--card-size)*0.135);
+  color:#666;
+  line-height:1;
+}
+
+#panel{
+  width:var(--panel-width);
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  min-height:0;
+}
+
+.slot{
+  flex:1;
+  background:#e9dfc5;
+  border-radius:var(--radius);
+  padding:10px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-height:0;
+  box-shadow:0 2px 6px rgba(0,0,0,.15);
+  transition:background .25s ease, transform .25s ease;
+}
+
+.bigCard{
+  width:100%;
+  height:100%;
+  background:white;
+  border-radius:calc(var(--radius)*0.9);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  box-sizing:border-box;
+  padding:14px;
+  gap:10px;
+}
+
+.bigCard .visual{
+  font-size:var(--big-emoji);
+  line-height:1;
+}
+
+.bigCard .greek{
+  font-size:var(--big-greek);
+  line-height:1.05;
+}
+
+.bigCard .gloss{
+  font-size:var(--big-gloss);
+}
+
+#controls{
+  display:flex;
+  justify-content:center;
+  flex-wrap:wrap;
+  gap:10px;
+  padding:8px 12px 10px;
+  flex-shrink:0;
+}
+
+.group{
+  background:white;
+  padding:6px 10px;
+  border-radius:10px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  box-shadow:0 1px 3px rgba(0,0,0,.1);
+  font-size:.95rem;
+}
+
+#coordInput{
+  width:72px;
+  border:1px solid #ddd;
+  border-radius:8px;
+  padding:4px 8px;
+  font-size:inherit;
+  text-align:center;
+  font-weight:700;
+}
+
+button{
+  background:#efb94e;
+  border:none;
+  padding:6px 10px;
+  border-radius:8px;
+  cursor:pointer;
+  font-size:inherit;
+}
+
+.matchSuccess .inner{
+  animation:successPulse .5s ease;
+}
+
+.matchSuccess .back{
+  background:#c9f7cf;
+}
+
+.slot.success{
+  background:#c9f7cf;
+  transform:scale(1.02);
+}
+
+.matchFail .inner{
+  animation:failShake .45s ease;
+}
+
+.matchFail .back{
+  background:#ffd6d6;
+}
+
+.slot.fail{
+  background:#ffd6d6;
+}
+
+@keyframes successPulse{
+  0%{transform:rotateY(180deg) scale(1);}
+  40%{transform:rotateY(180deg) scale(1.12);}
+  100%{transform:rotateY(180deg) scale(1);}
+}
+
+@keyframes failShake{
+  0%{transform:rotateY(180deg) translateX(0);}
+  20%{transform:rotateY(180deg) translateX(-8px);}
+  40%{transform:rotateY(180deg) translateX(8px);}
+  60%{transform:rotateY(180deg) translateX(-6px);}
+  80%{transform:rotateY(180deg) translateX(6px);}
+  100%{transform:rotateY(180deg) translateX(0);}
+}
+</style>
+</head>
+
+<body>
+
+<div id="app">
+
+<div id="header">
+  <select id="deckSelect" onchange="loadDeck(this.value)"></select>
+</div>
+
+<div id="main">
+
+  <div id="board">
+    <div></div>
+    <div id="colLabels"></div>
+    <div id="rowLabels"></div>
+    <div id="grid"></div>
+  </div>
+
+  <div id="panel">
+    <div class="slot" id="slot1"></div>
+    <div class="slot" id="slot2"></div>
+  </div>
+
+</div>
+
+<div id="controls">
+
+  <div class="group">
+    🔊 <input type="checkbox" id="sound" checked>
+    ⏱ <span id="timer">0:00</span>
+    🔁 <span id="turns">0</span>
+  </div>
+
+  <div class="group">
+    ⌨️
+    <input id="coordInput"
+           placeholder="A1"
+           autocomplete="off"
+           oninput="handleCoordinateInput(this.value)">
+  </div>
+
+  <div class="group">
+    <strong>A</strong>
+    <label><input type="checkbox" id="aG" checked onchange="refreshCards()"> α</label>
+    <label><input type="checkbox" id="aI" checked onchange="refreshCards()"> 🖼</label>
+    <label><input type="checkbox" id="aE" checked onchange="refreshCards()"> a</label>
+  </div>
+
+  <div class="group">
+    <strong>B</strong>
+    <label><input type="checkbox" id="bG" checked onchange="refreshCards()"> α</label>
+    <label><input type="checkbox" id="bI" checked onchange="refreshCards()"> 🖼</label>
+    <label><input type="checkbox" id="bE" checked onchange="refreshCards()"> a</label>
+  </div>
+
+  <div class="group">
+    💡 <label><input type="checkbox" id="hintsToggle" onchange="renderPresentation()"> Hints</label>
+  </div>
+
+  <div class="group">
+    <button onclick="peekAll()">Peek</button>
+    <button onclick="resetGame()">Reset</button>
+  </div>
+
+</div>
+
+</div>
+
+<script>
+const DECKS={
+  alpha_1_3:{
+    name:"Alpha With Angela Lessons 1-3",
+    geometry:{cols:6,rows:4},
+    cards:[
+      {g:"ὁ ἵππος",e:"horse",v:"🐴"},
+      {g:"ἡ ὑδρία",e:"water jar",v:"🏺"},
+      {g:"ὁ ὄνος",e:"donkey",v:"🫏"},
+      {g:"ὁ κύων",e:"dog",v:"🐶"},
+      {g:"ὁ λύκος",e:"wolf",v:"🐺"},
+      {g:"ὁ χοῖρος",e:"pig",v:"🐷"},
+      {g:"ὁ ἀνήρ",e:"man",v:"🧔"},
+      {g:"ἡ γυνή",e:"woman",v:"👩"},
+      {g:"τὸ παιδίον",e:"child",v:"🧒"},
+      {g:"ἡ οἰκία",e:"house",v:"🏠"},
+      {g:"ὁ ἄρτος",e:"bread",v:"🍞"},
+      {g:"τὸ δένδρον",e:"tree",v:"🌳"}
+    ]
+  }
+};
+
+let currentDeckKey="alpha_1_3";
+let currentDeck=DECKS[currentDeckKey];
+
+let pool=[],picks=[],lock=false;
+let seconds=0,turns=0,timer;
+
+let selectedCol=null;
+let selectedRow=null;
+let keyboardBuffer="";
+
+function initDeckSelect(){
+  const select=document.getElementById("deckSelect");
+  select.innerHTML="";
+
+  Object.entries(DECKS).forEach(([key,deck])=>{
+    const option=document.createElement("option");
+    option.value=key;
+    option.textContent=deck.name;
+    select.appendChild(option);
+  });
+
+  select.value=currentDeckKey;
+}
+
+function loadDeck(key){
+  currentDeckKey=key;
+  currentDeck=DECKS[key];
+  resetGame();
+}
+
+function columnName(i){
+  const names=[
+    "Α","Β","Γ","Δ","Ε","Ζ",
+    "Η","Θ","Ι","Κ","Λ","Μ",
+    "Ν","Ξ","Ο","Π","Ρ","Σ"
+  ];
+  return names[i] || String(i+1);
+}
+
+function rowName(i){
+  const names=[
+    ["1","ἕν"],
+    ["2","δύο"],
+    ["3","τρία"],
+    ["4","τέσσαρα"],
+    ["5","πέντε"],
+    ["6","ἕξ"]
+  ];
+
+  const n=names[i];
+  return n ? `${n[0]}<br>${n[1]}` : String(i+1);
+}
+
+function renderLabels(){
+  const {cols,rows}=getEffectiveGeometry();
+
+  const colLabels=document.getElementById("colLabels");
+  const rowLabels=document.getElementById("rowLabels");
+
+  colLabels.innerHTML="";
+  rowLabels.innerHTML="";
+
+  colLabels.style.gridTemplateColumns=`repeat(${cols},var(--card-size))`;
+  rowLabels.style.gridTemplateRows=`repeat(${rows},var(--card-size))`;
+
+  for(let i=0;i<cols;i++){
+    const d=document.createElement("div");
+    d.className="colLabel";
+    d.textContent=columnName(i);
+    d.dataset.col=i;
+    d.onclick=()=>selectColumn(i);
+    colLabels.appendChild(d);
+  }
+
+  for(let i=0;i<rows;i++){
+    const d=document.createElement("div");
+    d.className="rowLabel";
+    d.innerHTML=rowName(i);
+    d.dataset.row=i;
+    d.onclick=()=>selectRow(i);
+    rowLabels.appendChild(d);
+  }
+
+  updateCoordinateHighlights();
+}
+
+function selectColumn(i){
+  if(lock) return;
+  selectedCol = selectedCol===i ? null : i;
+  keyboardBuffer=selectedCol===null ? "" : columnKeyFromIndex(i);
+  updateCoordinateInputDisplay();
+  updateCoordinateHighlights();
+  tryCoordinateFlip();
+}
+
+function selectRow(i){
+  if(lock) return;
+  selectedRow = selectedRow===i ? null : i;
+
+  if(selectedCol!==null && selectedRow!==null){
+    keyboardBuffer=columnKeyFromIndex(selectedCol)+(selectedRow+1);
+  }
+
+  updateCoordinateInputDisplay();
+  updateCoordinateHighlights();
+  tryCoordinateFlip();
+}
+
+function columnKeyFromIndex(i){
+  const keys="ABGDEZHQIKLMNXOPRSTYFC";
+  return keys[i] || String(i+1);
+}
+
+function parseColumnChar(ch){
+  if(!ch) return null;
+
+  const latin="abgdezhqiklmnxoprstyfc";
+  const greekLower="αβγδεζηθικλμνξοπρστυφχ";
+  const greekUpper="ΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧ";
+
+  const c=ch.trim();
+
+  let i=latin.indexOf(c.toLowerCase());
+  if(i!==-1) return i;
+
+  i=greekLower.indexOf(c);
+  if(i!==-1) return i;
+
+  i=greekUpper.indexOf(c);
+  if(i!==-1) return i;
+
+  return null;
+}
+
+function handleCoordinateInput(value){
+  keyboardBuffer=value.trim();
+  processCoordinateString(keyboardBuffer);
+}
+
+function processCoordinateString(raw){
+  const clean=raw.trim();
+
+  if(clean===""){
+    selectedCol=null;
+    selectedRow=null;
+    updateCoordinateHighlights();
+    return;
+  }
+
+  const {cols,rows}=getEffectiveGeometry();
+
+  const col=parseColumnChar(clean[0]);
+
+  if(col===null || col>=cols){
+    selectedCol=null;
+    selectedRow=null;
+    updateCoordinateHighlights();
+    return;
+  }
+
+  selectedCol=col;
+
+  const rowText=clean.slice(1).replace(/[^\d]/g,"");
+
+  if(rowText===""){
+    selectedRow=null;
+    updateCoordinateHighlights();
+    return;
+  }
+
+  const row=Number(rowText)-1;
+
+  if(row<0 || row>=rows){
+    selectedRow=null;
+    updateCoordinateHighlights();
+    return;
+  }
+
+  selectedRow=row;
+  updateCoordinateHighlights();
+  tryCoordinateFlip();
+}
+
+document.addEventListener("keydown",event=>{
+  if(event.ctrlKey || event.altKey || event.metaKey) return;
+
+  const active=document.activeElement;
+  const tag=active ? active.tagName : "";
+
+  if(tag==="SELECT") return;
+
+  if(event.key==="Escape"){
+    clearCoordinateSelection();
+    event.preventDefault();
+    return;
+  }
+
+  if(event.key==="Backspace"){
+    keyboardBuffer=keyboardBuffer.slice(0,-1);
+    updateCoordinateInputDisplay();
+    processCoordinateString(keyboardBuffer);
+    event.preventDefault();
+    return;
+  }
+
+  if(event.key.length!==1) return;
+
+  const ch=event.key;
+
+  if(parseColumnChar(ch)!==null){
+    keyboardBuffer=ch;
+    updateCoordinateInputDisplay();
+    processCoordinateString(keyboardBuffer);
+    event.preventDefault();
+    return;
+  }
+
+  if(/[0-9]/.test(ch) && keyboardBuffer.length>0){
+    keyboardBuffer+=ch;
+    updateCoordinateInputDisplay();
+    processCoordinateString(keyboardBuffer);
+    event.preventDefault();
+    return;
+  }
+});
+
+function updateCoordinateInputDisplay(){
+  const input=document.getElementById("coordInput");
+  if(input) input.value=keyboardBuffer.toUpperCase();
+}
+
+function updateCoordinateHighlights(){
+  document.querySelectorAll(".colLabel").forEach(el=>{
+    const i=Number(el.dataset.col);
+    el.classList.toggle("labelSelected",selectedCol===i);
+  });
+
+  document.querySelectorAll(".rowLabel").forEach(el=>{
+    const i=Number(el.dataset.row);
+    el.classList.toggle("labelSelected",selectedRow===i);
+  });
+
+  document.querySelectorAll(".card").forEach((card,index)=>{
+    const {cols}=getEffectiveGeometry();
+
+    const row=Math.floor(index/cols);
+    const col=index%cols;
+
+    card.classList.toggle("coordCol", selectedCol===col);
+    card.classList.toggle("coordRow", selectedRow===row);
+  });
+}
+
+function clearCoordinateSelection(){
+  selectedCol=null;
+  selectedRow=null;
+  keyboardBuffer="";
+  updateCoordinateInputDisplay();
+  updateCoordinateHighlights();
+}
+
+function tryCoordinateFlip(){
+  if(selectedCol===null || selectedRow===null) return;
+
+  const {cols}=getEffectiveGeometry();
+  const index=selectedRow*cols+selectedCol;
+  const card=document.querySelectorAll(".card")[index];
+
+  if(card){
+    flip(card,pool[index],true);
+  }
+
+  clearCoordinateSelection();
+}
+
+function getEffectiveGeometry(){
+  const base=currentDeck.geometry || {cols:6,rows:4};
+
+  let cols=base.cols;
+  let rows=base.rows;
+
+  const needed=currentDeck.cards.length*2;
+  const TARGET=3/2;
+
+  while(cols*rows>needed && cols>2 && rows>2){
+    const ratio=cols/rows;
+
+    if(ratio>TARGET && cols>2){
+      cols--;
+    }else if(rows>2){
+      rows--;
+    }else{
+      break;
+    }
+  }
+
+  return {cols,rows};
+}
+
+function applyViewportSizing(){
+  const main=document.getElementById("main");
+  const rect=main.getBoundingClientRect();
+
+  const {cols,rows}=getEffectiveGeometry();
+
+  const gap=10;
+  const labelWidth=76;
+  const colLabelHeight=44;
+
+  const panelWidth=Math.min(
+    440,
+    Math.max(260, rect.width*0.30)
+  );
+
+  let size=Math.floor(
+    (rect.height - colLabelHeight - gap*(rows+1))
+    / rows
+  );
+
+  const totalBoardWidth=
+    labelWidth + gap + (size*cols) + gap*(cols-1);
+
+  const maxBoardWidth=
+    rect.width - panelWidth - 40;
+
+  if(totalBoardWidth > maxBoardWidth){
+    size=Math.floor(
+      (maxBoardWidth - labelWidth - gap - gap*(cols-1)) / cols
+    );
+  }
+
+  size=Math.max(62, Math.min(size, 170));
+
+  document.documentElement.style.setProperty("--cols",cols);
+  document.documentElement.style.setProperty("--rows",rows);
+  document.documentElement.style.setProperty("--card-size", size+"px");
+  document.documentElement.style.setProperty("--grid-gap", gap+"px");
+  document.documentElement.style.setProperty("--label-width", labelWidth+"px");
+  document.documentElement.style.setProperty("--col-label-height", colLabelHeight+"px");
+  document.documentElement.style.setProperty("--panel-width", panelWidth+"px");
+
+  document.documentElement.style.setProperty(
+    "--radius",
+    Math.max(10, Math.min(18, size*0.14))+"px"
+  );
+
+  document.documentElement.style.setProperty(
+    "--big-emoji",
+    Math.min(panelWidth*0.45, rect.height*0.25)+"px"
+  );
+
+  document.documentElement.style.setProperty(
+    "--big-greek",
+    Math.min(panelWidth*0.13, rect.height*0.055)+"px"
+  );
+
+  document.documentElement.style.setProperty(
+    "--big-gloss",
+    Math.min(panelWidth*0.095, rect.height*0.04)+"px"
+  );
+}
+
+window.addEventListener("resize",()=>{
+  applyViewportSizing();
+  renderLabels();
+  updateCoordinateHighlights();
+});
+
+function tone(f,t=0.12){
+  if(!document.getElementById("sound").checked) return;
+
+  try{
+    const ctx=new(AudioContext||webkitAudioContext)();
+    const o=ctx.createOscillator();
+    const g=ctx.createGain();
+
+    o.type="triangle";
+    o.frequency.value=f;
+    g.gain.value=0.08;
+    g.gain.exponentialRampToValueAtTime(0.0001,ctx.currentTime+t);
+
+    o.connect(g);
+    g.connect(ctx.destination);
+
+    o.start();
+    o.stop(ctx.currentTime+t);
+  }catch(e){}
+}
+
+function startTimer(){
+  clearInterval(timer);
+
+  timer=setInterval(()=>{
+    seconds++;
+    document.getElementById("timer").textContent=
+      Math.floor(seconds/60)+":"+
+      (seconds%60).toString().padStart(2,'0');
+  },1000);
+}
+
+function buildGrid(){
+  applyViewportSizing();
+  renderLabels();
+
+  const grid=document.getElementById("grid");
+  grid.innerHTML="";
+
+  const {cols,rows}=getEffectiveGeometry();
+
+  grid.style.gridTemplateColumns=`repeat(${cols},var(--card-size))`;
+  grid.style.gridTemplateRows=`repeat(${rows},var(--card-size))`;
+
+  pool=[
+    ...currentDeck.cards.map(x=>({...x,side:"a"})),
+    ...currentDeck.cards.map(x=>({...x,side:"b"}))
+  ];
+
+  shuffle(pool);
+
+  pool.forEach((item,index)=>{
+    const c=document.createElement("div");
+
+    c.className="card";
+    c.dataset.side=item.side;
+    c.dataset.index=index;
+
+    c.innerHTML=`
+<div class="inner">
+  <div class="face front">?</div>
+  <div class="face back">
+    ${renderCardContent(item)}
+  </div>
+</div>`;
+
+    c.onclick=()=>flip(c,item,false);
+
+    grid.appendChild(c);
+  });
+
+  updateCoordinateHighlights();
+}
+
+function renderVisual(item){
+  if(item.img){
+    return `<img class="visualImage" src="${item.img}" alt="${item.e}">`;
+  }
+
+  return `<div class="visual">${item.v || "•"}</div>`;
+}
+
+function renderCardContent(item){
+  const side=item.side;
+
+  const showGreek=document.getElementById(side+"G").checked;
+  const showImage=document.getElementById(side+"I").checked;
+  const showEnglish=document.getElementById(side+"E").checked;
+
+  return `
+<div class="cardContent">
+${showImage ? renderVisual(item) : ``}
+
+${showGreek ? `
+<div class="greek">${item.g}</div>
+` : ``}
+
+${showEnglish ? `
+<div class="gloss">${item.e}</div>
+` : ``}
+</div>`;
+}
+
+function refreshCards(){
+  document.querySelectorAll(".card").forEach((card,index)=>{
+    const item=pool[index];
+    card.querySelector(".back").innerHTML=renderCardContent(item);
+  });
+
+  renderPresentation();
+}
+
+function renderPresentation(){
+  slot1.innerHTML="";
+  slot2.innerHTML="";
+
+  slot1.classList.remove("success","fail");
+  slot2.classList.remove("success","fail");
+
+  if(picks[0]){
+    slot1.appendChild(big(picks[0].item));
+  }
+
+  if(picks[1]){
+    slot2.appendChild(big(picks[1].item));
+  }
+}
+
+function big(item){
+  const hints=document.getElementById("hintsToggle")?.checked;
+  const d=document.createElement("div");
+  d.className="bigCard";
+
+  if(hints){
+    d.innerHTML=`
+${renderVisual(item)}
+<div class="greek">${item.g}</div>
+<div class="gloss">${item.e}</div>`;
+  }else{
+    const side=item.side;
+
+    const showGreek=document.getElementById(side+"G").checked;
+    const showImage=document.getElementById(side+"I").checked;
+    const showEnglish=document.getElementById(side+"E").checked;
+
+    d.innerHTML=`
+${showImage ? renderVisual(item) : ``}
+
+${showGreek ? `
+<div class="greek">${item.g}</div>
+` : ``}
+
+${showEnglish ? `
+<div class="gloss">${item.e}</div>
+` : ``}`;
+  }
+
+  return d;
+}
+
+function showSuccess(){
+  picks.forEach(p=>p.card.classList.add("matchSuccess"));
+
+  slot1.classList.add("success");
+  slot2.classList.add("success");
+
+  setTimeout(()=>{
+    picks.forEach(p=>p.card.classList.remove("matchSuccess"));
+    slot1.classList.remove("success");
+    slot2.classList.remove("success");
+  },500);
+}
+
+function showFail(){
+  picks.forEach(p=>p.card.classList.add("matchFail"));
+
+  slot1.classList.add("fail");
+  slot2.classList.add("fail");
+
+  setTimeout(()=>{
+    picks.forEach(p=>p.card.classList.remove("matchFail"));
+    slot1.classList.remove("fail");
+    slot2.classList.remove("fail");
+  },500);
+}
+
+function flip(card,item,fromCoordinate=false){
+  if(lock||card.classList.contains("flipped")) return;
+
+  if(!fromCoordinate){
+    clearCoordinateSelection();
+  }
+
+  card.classList.add("flipped");
+
+  picks.push({card,item});
+
+  renderPresentation();
+
+  if(picks.length===2){
+    lock=true;
+    turns++;
+
+    document.getElementById("turns").textContent=turns;
+
+    const match=picks[0].item.g===picks[1].item.g;
+
+    if(match){
+      tone(880);
+      showSuccess();
+
+      setTimeout(()=>{
+        picks=[];
+        lock=false;
+        renderPresentation();
+      },500);
+
+    }else{
+      tone(220);
+      setTimeout(()=>tone(160),120);
+      showFail();
+
+      setTimeout(()=>{
+        picks[0].card.classList.remove("flipped");
+        picks[1].card.classList.remove("flipped");
+
+        picks=[];
+        lock=false;
+
+        renderPresentation();
+      },700);
+    }
+  }
+}
+
+function peekAll(){
+  if(document.activeElement) document.activeElement.blur();
+
+  const cards=document.querySelectorAll('.card');
+
+  cards.forEach(c=>c.classList.add('flipped'));
+
+  setTimeout(()=>{
+    cards.forEach(c=>{
+      if(!picks.some(p=>p.card===c)){
+        c.classList.remove('flipped');
+      }
+    });
+  },1500);
+}
+
+function resetGame(){
+  if(document.activeElement) document.activeElement.blur();
+
+  picks=[];
+  lock=false;
+
+  seconds=0;
+  turns=0;
+
+  selectedCol=null;
+  selectedRow=null;
+  keyboardBuffer="";
+
+  document.getElementById("turns").textContent=0;
+  document.getElementById("timer").textContent="0:00";
+
+  buildGrid();
+  startTimer();
+  renderPresentation();
+  updateCoordinateHighlights();
+}
+
+function shuffle(a){
+  for(let i=a.length-1;i>0;i--){
+    let j=Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+}
+
+initDeckSelect();
+buildGrid();
+startTimer();
+
+setTimeout(applyViewportSizing,50);
+</script>
+
+</body>
+</html>

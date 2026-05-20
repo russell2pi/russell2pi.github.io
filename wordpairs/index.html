@@ -726,7 +726,16 @@ function tryCoordinateFlip(){
     flip(card,pool[index],true);
   }
 
-  clearCoordinateSelection();
+//  clearCoordinateSelection();
+  const clearCol = selectedCol;
+const clearRow = selectedRow;
+keyboardBuffer = "";
+
+setTimeout(() => {
+  if (selectedCol === clearCol && selectedRow === clearRow) {
+    clearCoordinateSelection();
+  }
+}, 250);
 }
 
 function getEffectiveGeometry(){

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Koine Memory Engine</title>
+<title>Word Pairs</title>
 
 <style>
 html,body{
@@ -213,6 +213,13 @@ html,body{
   line-height:.95;
 }
 
+.visualImage{
+  max-width:92%;
+  max-height:70%;
+  object-fit:contain;
+  border-radius:10px;
+}
+
 .greek{
   font-weight:bold;
   font-size:calc(var(--card-size)*0.165);
@@ -266,6 +273,13 @@ html,body{
   line-height:1;
 }
 
+.bigCard .visualImage{
+  max-width:90%;
+  max-height:55%;
+  object-fit:contain;
+  border-radius:12px;
+}
+
 .bigCard .greek{
   font-size:var(--big-greek);
   line-height:1.05;
@@ -293,16 +307,6 @@ html,body{
   gap:8px;
   box-shadow:0 1px 3px rgba(0,0,0,.1);
   font-size:.95rem;
-}
-
-#coordInput{
-  width:72px;
-  border:1px solid #ddd;
-  border-radius:8px;
-  padding:4px 8px;
-  font-size:inherit;
-  text-align:center;
-  font-weight:700;
 }
 
 button{
@@ -389,25 +393,17 @@ button{
   </div>
 
   <div class="group">
-    ⌨️
-    <input id="coordInput"
-           placeholder="A1"
-           autocomplete="off"
-           oninput="handleCoordinateInput(this.value)">
-  </div>
-
-  <div class="group">
     <strong>A</strong>
-    <label><input type="checkbox" id="aG" checked onchange="refreshCards()"> α</label>
-    <label><input type="checkbox" id="aI" checked onchange="refreshCards()"> 🖼</label>
-    <label><input type="checkbox" id="aE" checked onchange="refreshCards()"> a</label>
+    <label><input type="checkbox" id="aG" onchange="refreshCards()"> α</label>
+    <label><input type="checkbox" id="aI" onchange="refreshCards()"> 🖼</label>
+    <label><input type="checkbox" id="aE" onchange="refreshCards()"> a</label>
   </div>
 
   <div class="group">
     <strong>B</strong>
-    <label><input type="checkbox" id="bG" checked onchange="refreshCards()"> α</label>
-    <label><input type="checkbox" id="bI" checked onchange="refreshCards()"> 🖼</label>
-    <label><input type="checkbox" id="bE" checked onchange="refreshCards()"> a</label>
+    <label><input type="checkbox" id="bG" onchange="refreshCards()"> α</label>
+    <label><input type="checkbox" id="bI" onchange="refreshCards()"> 🖼</label>
+    <label><input type="checkbox" id="bE" onchange="refreshCards()"> a</label>
   </div>
 
   <div class="group">
@@ -428,6 +424,17 @@ const DECKS={
   alpha_1_3:{
     name:"Alpha With Angela Lessons 1-3",
     geometry:{cols:6,rows:4},
+
+    // Deck-level display defaults:
+    // A card defaults to Image only.
+    // B card defaults to Greek only.
+    // Hints default ON for presentation panel.
+    defaults:{
+      a:{g:false,i:true,e:false},
+      b:{g:true,i:false,e:false},
+      hints:true
+    },
+
     cards:[
       {g:"ὁ ἵππος",e:"horse",v:"🐴"},
       {g:"ἡ ὑδρία",e:"water jar",v:"🏺"},
@@ -472,7 +479,25 @@ function initDeckSelect(){
 function loadDeck(key){
   currentDeckKey=key;
   currentDeck=DECKS[key];
+  applyDeckDefaults();
   resetGame();
+}
+
+function applyDeckDefaults(){
+  const d=currentDeck.defaults || {};
+
+  const a=d.a || {g:true,i:true,e:true};
+  const b=d.b || {g:true,i:true,e:true};
+
+  document.getElementById("aG").checked=!!a.g;
+  document.getElementById("aI").checked=!!a.i;
+  document.getElementById("aE").checked=!!a.e;
+
+  document.getElementById("bG").checked=!!b.g;
+  document.getElementById("bI").checked=!!b.i;
+  document.getElementById("bE").checked=!!b.e;
+
+  document.getElementById("hintsToggle").checked=!!d.hints;
 }
 
 function columnName(i){
@@ -535,7 +560,6 @@ function selectColumn(i){
   if(lock) return;
   selectedCol = selectedCol===i ? null : i;
   keyboardBuffer=selectedCol===null ? "" : columnKeyFromIndex(i);
-  updateCoordinateInputDisplay();
   updateCoordinateHighlights();
   tryCoordinateFlip();
 }
@@ -548,7 +572,6 @@ function selectRow(i){
     keyboardBuffer=columnKeyFromIndex(selectedCol)+(selectedRow+1);
   }
 
-  updateCoordinateInputDisplay();
   updateCoordinateHighlights();
   tryCoordinateFlip();
 }
@@ -577,11 +600,6 @@ function parseColumnChar(ch){
   if(i!==-1) return i;
 
   return null;
-}
-
-function handleCoordinateInput(value){
-  keyboardBuffer=value.trim();
-  processCoordinateString(keyboardBuffer);
 }
 
 function processCoordinateString(raw){
@@ -644,7 +662,6 @@ document.addEventListener("keydown",event=>{
 
   if(event.key==="Backspace"){
     keyboardBuffer=keyboardBuffer.slice(0,-1);
-    updateCoordinateInputDisplay();
     processCoordinateString(keyboardBuffer);
     event.preventDefault();
     return;
@@ -656,7 +673,6 @@ document.addEventListener("keydown",event=>{
 
   if(parseColumnChar(ch)!==null){
     keyboardBuffer=ch;
-    updateCoordinateInputDisplay();
     processCoordinateString(keyboardBuffer);
     event.preventDefault();
     return;
@@ -664,17 +680,11 @@ document.addEventListener("keydown",event=>{
 
   if(/[0-9]/.test(ch) && keyboardBuffer.length>0){
     keyboardBuffer+=ch;
-    updateCoordinateInputDisplay();
     processCoordinateString(keyboardBuffer);
     event.preventDefault();
     return;
   }
 });
-
-function updateCoordinateInputDisplay(){
-  const input=document.getElementById("coordInput");
-  if(input) input.value=keyboardBuffer.toUpperCase();
-}
 
 function updateCoordinateHighlights(){
   document.querySelectorAll(".colLabel").forEach(el=>{
@@ -702,7 +712,6 @@ function clearCoordinateSelection(){
   selectedCol=null;
   selectedRow=null;
   keyboardBuffer="";
-  updateCoordinateInputDisplay();
   updateCoordinateHighlights();
 }
 
@@ -1094,6 +1103,7 @@ function shuffle(a){
 }
 
 initDeckSelect();
+applyDeckDefaults();
 buildGrid();
 startTimer();
 

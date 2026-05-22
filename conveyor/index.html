@@ -958,7 +958,12 @@
                     breaks: true,
                     gfm: true
                 });
-                outputElement.innerHTML = marked.parse(sanitizedMarkdown);
+                // preserve extra spaces
+                const spacedMarkdown = sanitizedMarkdown.replace(/ {2,}/g, match =>
+    ' ' + '&nbsp;'.repeat(match.length - 1)
+);
+                outputElement.innerHTML = marked.parse(spacedMarkdown);
+                //outputElement.innerHTML = marked.parse(sanitizedMarkdown);
             } else {
                 outputElement.innerText = sanitizedMarkdown;
             }

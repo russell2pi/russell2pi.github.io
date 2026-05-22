@@ -155,6 +155,8 @@
         /* Custom rendered markdown styles using em for perfect proportional scaling, styled with Gentium Book Plus */
         #instructionsOutput {
             font-family: 'Gentium Book Plus', serif;
+            transition: transform 0.2s ease-out;
+            transform-origin: top left; 
         }
         #instructionsOutput h1 { font-size: 1.5em; font-weight: 800; color: #ffffff; margin-bottom: 0.5rem; }
         #instructionsOutput h2 { font-size: 1.3em; font-weight: 700; color: #f1f5f9; margin-bottom: 0.4rem; }
@@ -256,7 +258,7 @@
             <!-- Dynamic Instruction Input Box -->
             <div class="mt-4 border-t border-slate-800/60 pt-4">
                 <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Discussion Instructions (Markdown Supported)</label>
-                <textarea id="instructionsInput" rows="2.5" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-200 placeholder-slate-600 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none transition-all text-xs" placeholder="### 💬 Active Conversation Rules&#10;1. Speak for 1 minute each.&#10;2. Share your feedback."></textarea>
+                <textarea id="instructionsInput" rows="8.5" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-200 placeholder-slate-600 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none transition-all text-xs" placeholder="### 💬 Active Conversation Rules&#10;1. Speak for 1 minute each.&#10;2. Share your feedback."></textarea>
             </div>
 
             <div class="mt-6 flex flex-wrap gap-3 justify-between items-center">
@@ -944,6 +946,75 @@
             }).join('\n');
         }
 
+function autoScaleInstructions() {
+    const instructionsOutput = document.getElementById('instructionsOutput');
+    if (!instructionsOutput) return;
+
+    // 1. Reset layout properties for fresh calculations
+    instructionsOutput.style.transform = 'none';
+    instructionsOutput.style.transformOrigin = 'unset';
+    instructionsOutput.style.width = '100%';
+    instructionsOutput.style.marginBottom = '0px';
+    instructionsOutput.style.overflowY = 'visible';
+    instructionsOutput.style.maxHeight = 'none';
+
+    // 2. Baseline Configuration
+    const defaultFontSize = 20; 
+    const minFontSize = 12;     
+    const bottomBuffer = 80;    // Space reserved for the floor cutoff point
+
+    let currentFontSize = defaultFontSize;
+    instructionsOutput.style.fontSize = `${currentFontSize}px`;
+
+    // 3. Measure where our target baseline cutoff line is
+    const maxAllowedBottom = window.innerHeight - bottomBuffer;
+    let rect = instructionsOutput.getBoundingClientRect();
+
+    // --- CASE 1: TEXT IS TOO LONG (Scale Down to Fit) ---
+    if (rect.bottom > maxAllowedBottom) {
+        let safetyCounter = 0;
+        while (safetyCounter < 60) {
+            const currentRect = instructionsOutput.getBoundingClientRect();
+            if (currentRect.bottom <= maxAllowedBottom) break;
+
+            currentFontSize -= 0.5;
+            instructionsOutput.style.fontSize = `${currentFontSize}px`;
+
+            if (currentFontSize <= minFontSize) {
+                // If it's still too massive at 12px, lock it and scroll
+                instructionsOutput.style.overflowY = 'auto';
+                const availableHeight = window.innerHeight - currentRect.top - bottomBuffer;
+                instructionsOutput.style.maxHeight = `${availableHeight}px`;
+                break;
+            }
+            safetyCounter++;
+        }
+    } 
+    // --- CASE 2: TEXT IS SHORT (Scale Up aggressively until full-bleed) ---
+    else if (rect.bottom < maxAllowedBottom) {
+        let safetyCounter = 0;
+        // Run a deep loop allowing it to pass 32px up to huge sizes like 48px+ if needed
+        while (safetyCounter < 150) { 
+            currentFontSize += 0.5;
+            instructionsOutput.style.fontSize = `${currentFontSize}px`;
+
+            const currentRect = instructionsOutput.getBoundingClientRect();
+            
+            // The moment the box bottom hits or crosses our buffer cutoff line, stop!
+            if (currentRect.bottom >= maxAllowedBottom) {
+                break;
+            }
+            safetyCounter++;
+        }
+    }
+
+    // Optional UI Sync: Update your Text Zoom display badge if you have a variable tracking it
+    const textZoomIndicator = document.querySelector('.text-zoom-badge-selector'); // Update selector if needed
+    if (textZoomIndicator) {
+        textZoomIndicator.textContent = `${Math.round(currentFontSize)}px`;
+    }
+}
+
         // Update Instruction display from state
         function updateInstructionsDisplay() {
             const rawMarkdownContent = document.getElementById('instructionsInput').value || '*No active prompt assigned.*';
@@ -980,6 +1051,8 @@
             if (modalPromptText) {
                 modalPromptText.value = rawMarkdownContent;
             }
+//            setTimeout(autoScaleInstructions, 50);
+            autoScaleInstructions();
         }
 
         // Primary progression engine coordinating physical mode rules & structural shift animations
@@ -1001,6 +1074,7 @@
             } else if (activeMode === 'crossover') {
                 runCrossoverAdvance();
             }
+
         }
 
         // Mode 1 Advance Logic (Alternating single conveyor rotate - B is first mover)

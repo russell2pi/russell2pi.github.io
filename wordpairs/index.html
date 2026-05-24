@@ -18,8 +18,8 @@ html,body{
   --card-size:90px;
   --grid-gap:10px;
   --panel-width:320px;
-  --label-width:76px;
-  --col-label-height:44px;
+  --label-width:112px;
+  --col-label-height:72px;
   --radius:14px;
   --big-emoji:120px;
   --big-greek:34px;
@@ -40,7 +40,8 @@ html,body{
   flex-shrink:0;
 }
 
-#deckSelect{
+#deckSelect,
+.controlSelect{
   background:white;
   border:none;
   border-radius:14px;
@@ -49,6 +50,14 @@ html,body{
   font-size:1.05rem;
   box-shadow:0 2px 6px rgba(0,0,0,.14);
   max-width:min(520px,60vw);
+}
+
+.controlSelect{
+  padding:4px 8px;
+  font-weight:600;
+  font-size:.95rem;
+  box-shadow:none;
+  max-width:none;
 }
 
 #main{
@@ -76,20 +85,50 @@ html,body{
   grid-column:2;
   grid-row:1;
   display:grid;
+  align-items:end;
   grid-template-columns:repeat(var(--cols),var(--card-size));
   gap:var(--grid-gap);
 }
 
 .colLabel{
   display:flex;
+  flex-direction:column;
   align-items:center;
   justify-content:center;
   font-weight:700;
-  font-size:calc(var(--card-size)*0.24);
+  font-size:calc(var(--card-size)*0.29);
+  line-height:1.0;
   border-radius:10px;
   cursor:pointer;
   user-select:none;
+  white-space:nowrap;
+  overflow:visible;
   transition:background .15s ease, transform .15s ease;
+}
+
+.labelWord{
+  font-size:.62em;
+  font-weight:600;
+  white-space:nowrap;
+}
+
+.colLabel .labelWord{
+  font-size:calc(var(--card-size)*0.18);
+  line-height:1;
+  white-space:nowrap;
+}
+
+.rowNumber{
+  font-size:calc(var(--card-size)*0.29);
+  line-height:1;
+  font-weight:700;
+}
+
+.rowGreek{
+  font-size:calc(var(--card-size)*0.18);
+  line-height:1;
+  font-weight:700;
+  white-space:nowrap;
 }
 
 .colLabel:hover{
@@ -106,14 +145,15 @@ html,body{
 
 .rowLabel{
   display:flex;
-  align-items:center;
-  justify-content:flex-end;
+  flex-direction:column;
+  align-items:flex-end;
+  justify-content:center;
   text-align:right;
   padding-right:6px;
   box-sizing:border-box;
   font-weight:700;
-  line-height:1.05;
-  font-size:calc(var(--card-size)*0.15);
+  line-height:1.0;
+  font-size:calc(var(--card-size)*0.18);
   border-radius:10px;
   cursor:pointer;
   user-select:none;
@@ -438,6 +478,13 @@ button{
   </div>
 
   <div class="group">
+    <select id="colStartSelect" class="controlSelect" title="Column start" onchange="labelStartsChanged()"></select>
+    <select id="colStyleSelect" class="controlSelect" title="Column style" onchange="labelStartsChanged()"></select>
+    <select id="rowStartSelect" class="controlSelect" title="Row start" onchange="labelStartsChanged()"></select>
+    <select id="rowStyleSelect" class="controlSelect" title="Row style" onchange="labelStartsChanged()"></select>
+  </div>
+
+  <div class="group">
     <button onclick="peekAll()">Peek</button>
     <button onclick="resetGame()">Reset</button>
   </div>
@@ -457,6 +504,12 @@ const DECKS={
     // B card defaults to Greek only.
     // Hints default ON for presentation panel.
     defaults:{
+      labels:{
+        colStart:"Α",
+        colStyle:"alpha_greek",
+        rowStart:1,
+        rowStyle:"numeric_greek"
+      },
       a:{g:false,i:true,e:false},
       b:{g:true,i:false,e:false},
       hints:true
@@ -482,13 +535,19 @@ const DECKS={
     geometry:{cols:6,rows:4},
 
     defaults:{
+      labels:{
+        colStart:"Η",
+        colStyle:"alpha_greek",
+        rowStart:5,
+        rowStyle:"numeric_greek"
+      },
       a:{g:false,i:true,e:false},
       b:{g:true,i:false,e:false},
       hints:true
     },
 
     cards:[
-      {g:"οἱ ἵπποι",e:"horses",img:"assets/plural-emojis/horses.png"},
+      {g:"οἱ ἵπποι",e:"Oorses",img:"assets/plural-emojis/horses.png"},
       {g:"οἱ ὄνοι",e:"donkeys",img:"assets/plural-emojis/donkeys.png"},
       {g:"οἱ λίθοι",e:"stones",img:"assets/plural-emojis/stones.png"},
       {g:"οἱ ἄρτοι",e:"breads",img:"assets/plural-emojis/breads.png"},
@@ -506,6 +565,35 @@ const DECKS={
 
 let currentDeckKey="alpha_1_3";
 let currentDeck=DECKS[currentDeckKey];
+
+const GREEK_COLUMNS=[
+  "Α","Β","Γ","Δ","Ε","Ζ","Η","Θ","Ι","Κ","Λ","Μ",
+  "Ν","Ξ","Ο","Π","Ρ","Σ","Τ","Υ","Φ","Χ","Ψ","Ω"
+];
+
+const KOINE_COLUMN_NAMES=[
+  "ἄλφα","βῆτα","γάμμα","δέλτα","ἒ ψιλόν","ζῆτα","ἦτα","θῆτα",
+  "ἰῶτα","κάππα","λάμβδα","μῦ","νῦ","ξῖ","ὂ μικρόν","πῖ",
+  "ῥῶ","σῖγμα","ταῦ","ὖ ψιλόν","φῖ","χῖ","ψῖ","ὦ μέγα"
+];
+
+const GREEK_COLUMN_KEYS={
+  "α":0,"β":1,"γ":2,"δ":3,"ε":4,"ζ":5,"η":6,"θ":7,
+  "ι":8,"κ":9,"λ":10,"μ":11,"ν":12,"ξ":13,"ο":14,"π":15,
+  "ρ":16,"σ":17,"ς":17,"τ":18,"υ":19,"φ":20,"χ":21,"ψ":22,"ω":23,
+
+  // Tyndale House keyboard-style Latin input
+  "a":0,"b":1,"g":2,"d":3,"e":4,"z":5,"h":6,"q":7,
+  "i":8,"k":9,"l":10,"m":11,"n":12,"x":13,"o":14,"p":15,
+  "r":16,"s":17,"v":17,"t":18,"u":19,"f":20,"c":21,"y":22,"w":23
+};
+
+const KOINE_ROW_WORDS=[
+  "ἕν","δύο","τρία","τέσσαρα","πέντε",
+  "ἕξ","ἑπτά","ὀκτώ","ἐννέα","δέκα",
+  "ἕνδεκα","δώδεκα","δεκατρία","δεκατέσσαρα","δεκαπέντε",
+  "δεκαέξ","δεκαεπτά","δεκαοκτώ","δεκαεννέα","εἴκοσι"
+];
 
 let pool=[],picks=[],lock=false;
 let seconds=0,turns=0,timer;
@@ -539,6 +627,61 @@ function initDeckSelect(){
   select.value=currentDeckKey;
 }
 
+function initLabelStartSelects(){
+  const colSelect=document.getElementById("colStartSelect");
+  const colStyleSelect=document.getElementById("colStyleSelect");
+  const rowSelect=document.getElementById("rowStartSelect");
+  const rowStyleSelect=document.getElementById("rowStyleSelect");
+
+  colSelect.innerHTML="";
+  colStyleSelect.innerHTML="";
+  rowSelect.innerHTML="";
+  rowStyleSelect.innerHTML="";
+
+  GREEK_COLUMNS.forEach((letter,index)=>{
+    const option=document.createElement("option");
+    option.value=String(index);
+    option.textContent=letter;
+    colSelect.appendChild(option);
+  });
+
+  [
+    ["alpha","Α"],
+    ["alpha_greek","Αα"],
+    ["greek","α"]
+  ].forEach(([value,label])=>{
+    const option=document.createElement("option");
+    option.value=value;
+    option.textContent=label;
+    colStyleSelect.appendChild(option);
+  });
+
+  KOINE_ROW_WORDS.forEach((word,index)=>{
+    const n=index+1;
+    const option=document.createElement("option");
+    option.value=String(n);
+    option.textContent=String(n);
+    rowSelect.appendChild(option);
+  });
+
+  [
+    ["numeric","1"],
+    ["numeric_greek","1α"],
+    ["greek","α"]
+  ].forEach(([value,label])=>{
+    const option=document.createElement("option");
+    option.value=value;
+    option.textContent=label;
+    rowStyleSelect.appendChild(option);
+  });
+}
+
+function labelStartsChanged(){
+  clearCoordinateSelection();
+  applyViewportSizing();
+  renderLabels();
+}
+
 function loadDeck(key){
   currentDeckKey=key;
   currentDeck=DECKS[key];
@@ -561,29 +704,72 @@ function applyDeckDefaults(){
   document.getElementById("bE").checked=!!b.e;
 
   document.getElementById("hintsToggle").checked=!!d.hints;
+
+  const labels=d.labels || {};
+  const colIndex=typeof labels.colStart==="number"
+    ? labels.colStart
+    : GREEK_COLUMNS.indexOf(labels.colStart || "Α");
+
+  document.getElementById("colStartSelect").value=String(Math.max(0,colIndex));
+  document.getElementById("colStyleSelect").value=labels.colStyle || "alpha";
+  document.getElementById("rowStartSelect").value=String(labels.rowStart || 1);
+  document.getElementById("rowStyleSelect").value=labels.rowStyle || "numeric_greek";
 }
 
+function getColumnStartIndex(){
+  return Number(document.getElementById("colStartSelect")?.value || 0);
+}
+
+function getRowStartNumber(){
+  return Number(document.getElementById("rowStartSelect")?.value || 1);
+}
+
+function getColumnStyle(){
+  return document.getElementById("colStyleSelect")?.value || "alpha";
+}
+
+function getRowStyle(){
+  return document.getElementById("rowStyleSelect")?.value || "numeric_greek";
+}
+
+function columnAbsoluteIndex(i){
+  return (getColumnStartIndex()+i) % GREEK_COLUMNS.length;
+}
+
+function labelWordHtml(text){
+  return String(text).replace(/ /g,"&nbsp;");
+}
+
+
 function columnName(i){
-  const names=[
-    "Α","Β","Γ","Δ","Ε","Ζ",
-    "Η","Θ","Ι","Κ","Λ","Μ",
-    "Ν","Ξ","Ο","Π","Ρ","Σ"
-  ];
-  return names[i] || String(i+1);
+  const absoluteIndex=columnAbsoluteIndex(i);
+  const letter=GREEK_COLUMNS[absoluteIndex];
+  const name=labelWordHtml(KOINE_COLUMN_NAMES[absoluteIndex]);
+  const style=getColumnStyle();
+
+  if(style==="greek") return `<div class="labelWord">${name}</div>`;
+  if(style==="alpha_greek") return `<div>${letter}</div><div class="labelWord">${name}</div>`;
+  return letter;
 }
 
 function rowName(i){
-  const names=[
-    ["1","ἕν"],
-    ["2","δύο"],
-    ["3","τρία"],
-    ["4","τέσσαρα"],
-    ["5","πέντε"],
-    ["6","ἕξ"]
-  ];
+  const n=getRowStartNumber()+i;
+  const word=KOINE_ROW_WORDS[n-1];
+  const style=getRowStyle();
 
-  const n=names[i];
-  return n ? `${n[0]}<br>${n[1]}` : String(i+1);
+  if(style==="greek"){
+    return word
+      ? `<div class="rowGreek">${labelWordHtml(word)}</div>`
+      : `<div class="rowNumber">${n}</div>`;
+  }
+
+  if(style==="numeric_greek"){
+    return word
+      ? `<div class="rowNumber">${n}</div><div class="rowGreek">${labelWordHtml(word)}</div>`
+      : `<div class="rowNumber">${n}</div>`;
+  }
+
+  return `<div class="rowNumber">${n}</div>`;
 }
 
 function renderLabels(){
@@ -601,7 +787,7 @@ function renderLabels(){
   for(let i=0;i<cols;i++){
     const d=document.createElement("div");
     d.className="colLabel";
-    d.textContent=columnName(i);
+    d.innerHTML=columnName(i);
     d.dataset.col=i;
     d.onclick=()=>selectColumn(i);
     colLabels.appendChild(d);
@@ -632,7 +818,7 @@ function selectRow(i){
   selectedRow = selectedRow===i ? null : i;
 
   if(selectedCol!==null && selectedRow!==null){
-    keyboardBuffer=columnKeyFromIndex(selectedCol)+(selectedRow+1);
+    keyboardBuffer=columnKeyFromIndex(selectedCol)+(getRowStartNumber()+selectedRow);
   }
 
   updateCoordinateHighlights();
@@ -640,29 +826,20 @@ function selectRow(i){
 }
 
 function columnKeyFromIndex(i){
-  const keys="ABGDEZHQIKLMNXOPRSTYFC";
-  return keys[i] || String(i+1);
+  const absoluteIndex=columnAbsoluteIndex(i);
+  const keys="abgdezhqiklmnxoprstufcyw";
+  return keys[absoluteIndex] || String(absoluteIndex+1);
 }
 
 function parseColumnChar(ch){
   if(!ch) return null;
 
-  const latin="abgdezhqiklmnxoprstyfc";
-  const greekLower="αβγδεζηθικλμνξοπρστυφχ";
-  const greekUpper="ΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧ";
+  const c=ch.trim().toLowerCase();
+  const absoluteIndex=GREEK_COLUMN_KEYS[c];
 
-  const c=ch.trim();
+  if(absoluteIndex===undefined) return null;
 
-  let i=latin.indexOf(c.toLowerCase());
-  if(i!==-1) return i;
-
-  i=greekLower.indexOf(c);
-  if(i!==-1) return i;
-
-  i=greekUpper.indexOf(c);
-  if(i!==-1) return i;
-
-  return null;
+  return (absoluteIndex-getColumnStartIndex()+GREEK_COLUMNS.length) % GREEK_COLUMNS.length;
 }
 
 function processCoordinateString(raw){
@@ -696,7 +873,7 @@ function processCoordinateString(raw){
     return;
   }
 
-  const row=Number(rowText)-1;
+  const row=Number(rowText)-getRowStartNumber();
 
   if(row<0 || row>=rows){
     selectedRow=null;
@@ -742,8 +919,22 @@ document.addEventListener("keydown",event=>{
   }
 
   if(/[0-9]/.test(ch) && keyboardBuffer.length>0){
-    keyboardBuffer+=ch;
-    processCoordinateString(keyboardBuffer);
+    const hasColumnOnly=keyboardBuffer.length===1;
+
+    if(hasColumnOnly && ch!=="0"){
+      keyboardBuffer+=ch;
+      processCoordinateString(keyboardBuffer);
+      keyboardBuffer="";
+    }else{
+      keyboardBuffer+=ch;
+      processCoordinateString(keyboardBuffer);
+
+      const rowText=keyboardBuffer.slice(1).replace(/[^\d]/g,"");
+      if(rowText.length>=3 || (rowText.length>=2 && rowText[0]==="0")){
+        keyboardBuffer="";
+      }
+    }
+
     event.preventDefault();
     return;
   }
@@ -832,8 +1023,9 @@ function applyViewportSizing(){
   const {cols,rows}=getEffectiveGeometry();
 
   const gap=10;
-  const labelWidth=76;
-  const colLabelHeight=44;
+  const labelWidth=112;
+  const colStyle=getColumnStyle();
+  const colLabelHeight=colStyle==="alpha" ? 44 : 76;
 
   const panelWidth=Math.min(
     440,
@@ -1176,6 +1368,7 @@ function shuffle(a){
 
 loadDeckFromUrl();
 initDeckSelect();
+initLabelStartSelects();
 applyDeckDefaults();
 buildGrid();
 startTimer();

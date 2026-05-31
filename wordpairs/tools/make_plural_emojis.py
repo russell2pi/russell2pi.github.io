@@ -1,5 +1,7 @@
-from PIL import Image, ImageDraw, ImageFont, ImageFilter
+from argparse import ArgumentParser
 from pathlib import Path
+
+from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
 OUTPUT = Path("assets/plural-emojis")
 OUTPUT.mkdir(parents=True, exist_ok=True)
@@ -8,23 +10,40 @@ SIZE = 512
 BG = (255, 255, 255, 0)
 
 FONT_PATH = "/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf"
+FONT_SIZE = 109
 
-font = ImageFont.truetype(FONT_PATH, 109)
+DECKS = {
+    "alpha_6": [
+        ("horses", "🐎"),
+        ("donkeys", "🫏"),
+        ("stones", "🪨"),
+        ("breads", "🍞"),
+        ("pens", "🖊️"),
+        ("camels", "🐪"),
+        ("wolves", "🐺"),
+        ("pigs", "🐖"),
+        ("doors", "🚪"),
+        ("houses", "🏠"),
+        ("cups", "🥛"),
+        ("sheep", "🐑"),
+    ],
+    "alpha_7": [
+        ("tongues", "👅"),
+        ("fingers", "☝️"),
+        ("heads", "🧑"),
+        ("hairstyles", "💇"),
+        ("teeth", "🦷"),
+        ("bones", "🦴"),
+        ("eyes", "👁️"),
+        ("faces", "🙂"),
+        ("legs", "🦵"),
+        ("mouths", "👄"),
+        ("hands", "✋"),
+        ("doors", "🚪"),
+    ],
+}
 
-items = [
-    ("horses", "🐎"),
-    ("donkeys", "🫏"),
-    ("stones", "🪨"),
-    ("breads", "🍞"),
-    ("pens", "🖊️"),
-    ("camels", "🐪"),
-    ("wolves", "🐺"),
-    ("pigs", "🐖"),
-    ("doors", "🚪"),
-    ("houses", "🏠"),
-    ("cups", "🥛"),
-    ("sheep", "🐑"),
-]
+font = ImageFont.truetype(FONT_PATH, FONT_SIZE)
 
 
 def draw_plural_emoji(filename, emoji, index):
@@ -65,45 +84,58 @@ def draw_plural_emoji(filename, emoji, index):
 
     draw = ImageDraw.Draw(img)
 
-    draw.text(
-        back_pos,
-        emoji,
-        font=font,
-        embedded_color=True,
-    )
+    draw.text(back_pos, emoji, font=font, embedded_color=True)
+    draw.text(front_pos, emoji, font=font, embedded_color=True)
 
-    draw.text(
-        front_pos,
-        emoji,
-        font=font,
-        embedded_color=True,
-    )
-
- #   output_path = OUTPUT / f"{filename}.png"
- #   img.save(output_path)
     bbox = img.getbbox()
 
     if bbox:
         img = img.crop(bbox)
 
-# optional padding after crop
-    padding = 0;#12
+    # Optional padding after crop.
+    padding = 0  # try 12 if you want a little transparent border
 
     cropped = Image.new(
         "RGBA",
-        (img.width + padding*2, img.height + padding*2),
-        (255,255,255,0)
+        (img.width + padding * 2, img.height + padding * 2),
+        (255, 255, 255, 0),
     )
 
     cropped.alpha_composite(img, (padding, padding))
 
     output_path = OUTPUT / f"{filename}.png"
-    cropped.save(output_path)
 
+    if output_path.exists():
+        print(f"Overwriting {output_path}")
+
+    # Image.save overwrites existing files at the same path.
+    cropped.save(output_path)
     print(f"Saved {output_path}")
 
 
-for index, (filename, emoji) in enumerate(items):
-    draw_plural_emoji(filename, emoji, index)
+def parse_args():
+    parser = ArgumentParser(
+        description="Generate double-emoji plural PNGs for a selected deck."
+    )
+    parser.add_argument(
+        "deck",
+        choices=DECKS.keys(),
+        help="Deck to generate: alpha_6 or alpha_7",
+    )
+    return parser.parse_args()
 
-print("Done.")
+
+def main():
+    args = parse_args()
+    items = DECKS[args.deck]
+
+    print(f"Generating {len(items)} images for {args.deck}...")
+
+    for index, (filename, emoji) in enumerate(items):
+        draw_plural_emoji(filename, emoji, index)
+
+    print("Done.")
+
+
+if __name__ == "__main__":
+    main()
